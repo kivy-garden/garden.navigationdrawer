@@ -72,8 +72,6 @@ class ActionPanel(StencilView):
     # Defaults (see kv) to minimum of 300dp or half actionpanel width
 
     # Touch properties
-    scroll_timeout = NumericProperty(200)
-    scroll_distance = NumericProperty('20dp')
     touch_accept_width = NumericProperty('10dp')
 
     # Animation properties
@@ -179,13 +177,13 @@ simply jumping.'''
                 self.state = 'open'
 
     def on_touch_down(self, touch):
-        if not self.collide_point(*touch.pos) or self.disabled or self._touch is not None:
+        if not self.collide_point(*touch.pos) or self._touch is not None:
             super(ActionPanel, self).on_touch_down(touch)
             return 
         if self.anim_progress > 0.001:
             valid_region = self._main_panel.x < touch.x < (self._main_panel.x + self._main_panel.width)
         else:
-            valid_region = self.x < touch.x < (self.x + dp(10))
+            valid_region = self.x < touch.x < (self.x + self.touch_accept_width)
         if not valid_region:
             super(ActionPanel, self).on_touch_down(touch)
             return False
@@ -211,7 +209,7 @@ simply jumping.'''
             init_state = touch.ud['type']
             touch.ungrab(self)
             if init_state == 'open':
-                if self.anim_progress >= 1:
+                if self.anim_progress >= 0.975:
                         self.anim_to_state('closed')
                 else:
                     self._anim_relax()
