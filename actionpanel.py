@@ -5,6 +5,7 @@ ActionPanel
 from kivy.animation import Animation
 from kivy.uix.widget import Widget
 from kivy.uix.stencilview import StencilView
+from kivy.metrics import dp
 from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty, ListProperty, AliasProperty, StringProperty, DictProperty, BooleanProperty, StringProperty, OptionProperty, BoundedNumericProperty
 
 from kivy.lang import Builder
@@ -14,6 +15,7 @@ Builder.load_string('''
     size_hint: (1,1)
     _side_panel: sidepanel
     _main_panel: mainpanel
+    _join_image: joinimage
     side_panel_width: min(dp(250), 0.5*self.width)
     BoxLayout:
         id: sidepanel
@@ -32,6 +34,7 @@ Builder.load_string('''
                 pos: self.pos
                 size: self.size
     Image:
+        id: joinimage
         source: 'actionpanel_gradient7.png'
         mipmap: False
         width: dp(7)
@@ -40,12 +43,6 @@ Builder.load_string('''
         y: mainpanel.y
         allow_stretch: True
         keep_ratio: False
-        # canvas.before:
-        #     Color:
-        #         rgba: (1,0,0,1)
-        #     Rectangle:
-        #         pos: self.pos
-        #         size: self.size
     
     
 ''')
@@ -74,10 +71,17 @@ class ActionPanel(StencilView):
     side_panel_width = NumericProperty()
     # Defaults (see kv) to minimum of 300dp or half actionpanel width
 
+    # Touch properties
+    scroll_timeout = NumericProperty(200)
+    scroll_distance = NumericProperty('20dp')
+    touch_accept_width = NumericProperty('10dp')
+
     # Animation properties
     _touch = ObjectProperty(None, allownone=True)
-    side_panel_open = BooleanProperty(False)
+    state = OptionProperty('closed',options=('open','closed'))
     anim_progress = NumericProperty(0)
+    anim_time = NumericProperty(0.3) # Animation open/close time
+    min_dist_to_open = NumericProperty(0.7)
     panel_init_x = NumericProperty(0)
 
     def add_widget(self, widget):
@@ -133,25 +137,65 @@ class ActionPanel(StencilView):
             self.anim_progress = 1
         elif self.anim_progress < 0:
             self.anim_progress = 0
-        if self.anim_progress > 0.9999:
-            self.side_panel_open = True
-        elif self.anim_progress < 0.0001:
-            self.side_panel_open = False
+        if self.anim_progress >= 1:
+            self.state = 'open'
+        elif self.anim_progress <= 0:
+            self.state = 'closed'
 
-    def on_side_panel_open(self, *args):
+    def on_state(self, *args):
         Animation.cancel_all(self)
-        if self.side_panel_open:
+        if self.state == 'open':
             self.anim_progress = 1
         else:
-            self.anim_progress = 0.000001
+            self.anim_progress = 0
+
+    def anim_to_state(self, state):
+        if state == 'open':
+            anim = Animation(anim_progress=1,
+                             duration=self.anim_time,
+                             t='out_cubic')
+            anim.start(self)
+        elif state == 'closed':
+            anim = Animation(anim_progress=0,
+                             duration=self.anim_time,
+                             t='out_cubic')
+            anim.start(self)
+        else:
+            raise ActionPanelException(
+                'Invalid state received, should be one of `open` or `closed`')
+
+    def toggle_state(self, animate=True):
+        '''Toggles from open to closed or vice versa, optionally animating or
+simply jumping.'''
+        if self.state == 'open':
+            if animate:
+                self.anim_to_state('closed')
+            else:
+                self.state = 'closed'
+        elif self.state == 'closed':
+            if animate:
+                self.anim_to_state('open')
+            else:
+                self.state = 'open'
 
     def on_touch_down(self, touch):
-        if not self.collide_point(*touch.pos):
+        if not self.collide_point(*touch.pos) or self.disabled or self._touch is not None:
             super(ActionPanel, self).on_touch_down(touch)
             return 
+        if self.anim_progress > 0.001:
+            valid_region = self._main_panel.x < touch.x < (self._main_panel.x + self._main_panel.width)
+        else:
+            valid_region = self.x < touch.x < (self.x + dp(10))
+        if not valid_region:
+            super(ActionPanel, self).on_touch_down(touch)
+            return False
         Animation.cancel_all(self)
         self._panel_init_x = self._main_panel.x
         self._touch = touch
+        touch.ud['type'] = self.state
+        touch.grab(self)
+        return True
+
     def on_touch_move(self, touch):
         if touch is self._touch:
             dx = touch.x - touch.ox
@@ -164,24 +208,28 @@ class ActionPanel(StencilView):
     def on_touch_up(self, touch):
         if touch is self._touch:
             self._touch = None
-            self._anim_to_steady()
+            init_state = touch.ud['type']
+            touch.ungrab(self)
+            if init_state == 'open':
+                if self.anim_progress >= 1:
+                        self.anim_to_state('closed')
+                else:
+                    self._anim_relax()
+            else:
+                self._anim_relax()
         else:
             super(ActionPanel, self).on_touch_up(touch)
             return
 
-    def _anim_to_steady(self):
-        if self.anim_progress > 0.7:
-            # self.anim_progress = 1
-            anim = Animation(anim_progress=1, duration=0.3, t='out_cubic')
+    def _anim_relax(self):
+        '''Animates to the open or closed position, depending on whether the
+        current position is past self.min_dist_to_open.
+
+        '''
+        if self.anim_progress > self.min_dist_to_open:
+            self.anim_to_state('open')
         else:
-            # self.anim_progress = 0
-            anim = Animation(anim_progress=0, duration=0.3, t='out_cubic')
-        anim.start(self)
-        
-        
-        
-        
-            
+            self.anim_to_state('closed')
 
     
 if __name__ == '__main__':
@@ -210,6 +258,12 @@ if __name__ == '__main__':
                                 keep_ratio=False))
     actionpanel.add_widget(main_panel)
     label.bind(size=label.setter('text_size'))
+    button = Button(text='toggle ActionPanel state (animate)', size_hint_y=0.2)
+    button.bind(on_press=lambda j: actionpanel.toggle_state())
+    button2 = Button(text='toggle ActionPanel state (jump)', size_hint_y=0.2)
+    button2.bind(on_press=lambda j: actionpanel.toggle_state(False))
+    main_panel.add_widget(button)
+    main_panel.add_widget(button2)
     
     Window.add_widget(actionpanel)
 
