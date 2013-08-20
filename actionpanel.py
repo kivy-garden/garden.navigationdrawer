@@ -1,5 +1,5 @@
 '''
-ActionPanel
+NavigationDrawer
 '''
 
 from kivy.animation import Animation
@@ -11,7 +11,7 @@ from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProper
 from kivy.lang import Builder
 
 Builder.load_string('''
-<ActionPanel>:
+<NavigationDrawer>:
     size_hint: (1,1)
     _side_panel: sidepanel
     _main_panel: mainpanel
@@ -35,7 +35,7 @@ Builder.load_string('''
                 size: self.size
     Image:
         id: joinimage
-        source: 'actionpanel_gradient7.png'
+        source: 'navigationdrawer_gradient.png'
         mipmap: False
         width: dp(7)
         height: mainpanel.height
@@ -43,17 +43,15 @@ Builder.load_string('''
         y: mainpanel.y
         allow_stretch: True
         keep_ratio: False
-    
-    
 ''')
 
-class ActionPanelException(Exception):
-    '''Raised when add_widget or remove_widget called incorrectly on an ActionPanel.
+class NavigationDrawerException(Exception):
+    '''Raised when add_widget or remove_widget called incorrectly on an NavigationDrawer.
 
     '''
 
 
-class ActionPanel(StencilView):
+class NavigationDrawer(StencilView):
     '''Widget taking two children, a side panel and a main panel,
     displaying them in a way that replicates the popular Android
     functionality (e.g. from ActionBarSherlock?).
@@ -69,7 +67,7 @@ class ActionPanel(StencilView):
     main_panel = ObjectProperty(None, allownone=True)
 
     side_panel_width = NumericProperty()
-    # Defaults (see kv) to minimum of 300dp or half actionpanel width
+    # Defaults (see kv) to minimum of 300dp or half navigationdrawer width
 
     # Touch properties
     touch_accept_width = NumericProperty('20dp')
@@ -84,13 +82,13 @@ class ActionPanel(StencilView):
 
     def add_widget(self, widget):
         if len(self.children) == 0:
-            super(ActionPanel, self).add_widget(widget)
+            super(NavigationDrawer, self).add_widget(widget)
             self._side_panel = widget
         elif len(self.children) == 1:
-            super(ActionPanel, self).add_widget(widget)
+            super(NavigationDrawer, self).add_widget(widget)
             self._main_panel = widget
         elif len(self.children) == 2:
-            super(ActionPanel, self).add_widget(widget)
+            super(NavigationDrawer, self).add_widget(widget)
             self._join_image = widget
         elif self.side_panel is None:
             self._side_panel.add_widget(widget)
@@ -99,8 +97,8 @@ class ActionPanel(StencilView):
             self._main_panel.add_widget(widget)
             self.main_panel = widget
         else:
-            raise ActionPanelException(
-                'Can\'t add widgets directly to ActionPanel')
+            raise NavigationDrawerException(
+                'Can\'t add widgets directly to NavigationDrawer')
 
     def remove_widget(self, widget):
         if widget is self.side_panel:
@@ -110,7 +108,7 @@ class ActionPanel(StencilView):
             self._main_panel.remove_widget(widget)
             self.main_panel = None
         else:
-            raise ActionPanelException(
+            raise NavigationDrawerException(
                 'Widget is neither the side or main panel, can\'t remove it.')
 
     def set_side_panel(self, widget):
@@ -159,7 +157,7 @@ class ActionPanel(StencilView):
                              t='out_cubic')
             anim.start(self)
         else:
-            raise ActionPanelException(
+            raise NavigationDrawerException(
                 'Invalid state received, should be one of `open` or `closed`')
 
     def toggle_state(self, animate=True):
@@ -178,14 +176,14 @@ simply jumping.'''
 
     def on_touch_down(self, touch):
         if not self.collide_point(*touch.pos) or self._touch is not None:
-            super(ActionPanel, self).on_touch_down(touch)
+            super(NavigationDrawer, self).on_touch_down(touch)
             return 
         if self.anim_progress > 0.001:
             valid_region = self._main_panel.x < touch.x < (self._main_panel.x + self._main_panel.width)
         else:
             valid_region = self.x < touch.x < (self.x + self.touch_accept_width)
         if not valid_region:
-            super(ActionPanel, self).on_touch_down(touch)
+            super(NavigationDrawer, self).on_touch_down(touch)
             return False
         Animation.cancel_all(self)
         self._panel_init_x = self._main_panel.x
@@ -200,7 +198,7 @@ simply jumping.'''
             
             self.anim_progress = max(0,min((self._panel_init_x + dx) / self.side_panel_width,1))
         else:
-            super(ActionPanel, self).on_touch_move(touch)
+            super(NavigationDrawer, self).on_touch_move(touch)
             return
 
     def on_touch_up(self, touch):
@@ -216,7 +214,7 @@ simply jumping.'''
             else:
                 self._anim_relax()
         else:
-            super(ActionPanel, self).on_touch_up(touch)
+            super(NavigationDrawer, self).on_touch_up(touch)
             return
 
     def _anim_relax(self):
@@ -238,13 +236,13 @@ if __name__ == '__main__':
     from kivy.uix.image import Image
     from kivy.core.window import Window
     
-    actionpanel = ActionPanel()
+    navigationdrawer = NavigationDrawer()
 
     side_panel = BoxLayout(orientation='vertical')
     side_panel.add_widget(Label(text='Panel label'))
     side_panel.add_widget(Button(text='A button'))
     side_panel.add_widget(Button(text='Another button'))
-    actionpanel.add_widget(side_panel)
+    navigationdrawer.add_widget(side_panel)
 
     label_head = '[b]Example label filling main panel[/b]\n\n[color=ff0000](pull from left to right!)[/color]\n\nIn this example, the left panel is a simple boxlayout menu, and this main panel is a BoxLayout with a label and example image.\n\n'
     riker = "Some days you get the bear, and some days the bear gets you. I am your worst nightmare! You enjoyed that. When has justice ever been as simple as a rule book? For an android with no feelings, he sure managed to evoke them in others. Flair is what marks the difference between artistry and mere competence. Worf, It's better than music. It's jazz. The game's not big enough unless it scares you a little. We finished our first sensor sweep of the neutral zone. Your head is not an artifact! What? We're not at all alike!"
@@ -254,16 +252,16 @@ if __name__ == '__main__':
     main_panel.add_widget(label)
     main_panel.add_widget(Image(source='red_pixel.png', allow_stretch=True,
                                 keep_ratio=False))
-    actionpanel.add_widget(main_panel)
+    navigationdrawer.add_widget(main_panel)
     label.bind(size=label.setter('text_size'))
-    button = Button(text='toggle ActionPanel state (animate)', size_hint_y=0.2)
-    button.bind(on_press=lambda j: actionpanel.toggle_state())
-    button2 = Button(text='toggle ActionPanel state (jump)', size_hint_y=0.2)
-    button2.bind(on_press=lambda j: actionpanel.toggle_state(False))
+    button = Button(text='toggle NavigationDrawer state (animate)', size_hint_y=0.2)
+    button.bind(on_press=lambda j: navigationdrawer.toggle_state())
+    button2 = Button(text='toggle NavigationDrawer state (jump)', size_hint_y=0.2)
+    button2.bind(on_press=lambda j: navigationdrawer.toggle_state(False))
     main_panel.add_widget(button)
     main_panel.add_widget(button2)
     
-    Window.add_widget(actionpanel)
+    Window.add_widget(navigationdrawer)
 
     runTouchApp()
         
