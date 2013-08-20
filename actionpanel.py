@@ -32,9 +32,9 @@ Builder.load_string('''
                 pos: self.pos
                 size: self.size
     Image:
-        source: 'actionpanel_gradient6.png'
-        mipmap: True
-        width: dp(10)
+        source: 'actionpanel_gradient7.png'
+        mipmap: False
+        width: dp(7)
         height: mainpanel.height
         x: mainpanel.x - self.width + 1
         y: mainpanel.y
@@ -189,6 +189,7 @@ if __name__ == '__main__':
     from kivy.uix.boxlayout import BoxLayout
     from kivy.uix.label import Label
     from kivy.uix.button import Button
+    from kivy.uix.image import Image
     from kivy.core.window import Window
     
     actionpanel = ActionPanel()
@@ -199,12 +200,16 @@ if __name__ == '__main__':
     side_panel.add_widget(Button(text='Another button'))
     actionpanel.add_widget(side_panel)
 
-    label_head = '[b]Example label filling main panel[/b]\n\n(pull from left to right)\n\n'
+    label_head = '[b]Example label filling main panel[/b]\n\n[color=ff0000](pull from left to right!)[/color]\n\nIn this example, the left panel is a simple boxlayout menu, and this main panel is a BoxLayout with a label and example image.\n\n'
     riker = "Some days you get the bear, and some days the bear gets you. I am your worst nightmare! You enjoyed that. When has justice ever been as simple as a rule book? For an android with no feelings, he sure managed to evoke them in others. Flair is what marks the difference between artistry and mere competence. Worf, It's better than music. It's jazz. The game's not big enough unless it scares you a little. We finished our first sensor sweep of the neutral zone. Your head is not an artifact! What? We're not at all alike!"
-    main_panel = Label(text=label_head+riker+riker, font_size='20sp',
+    main_panel = BoxLayout(orientation='vertical')
+    label = Label(text=label_head+riker, font_size='15sp',
                        markup=True, valign='top', padding=(-30,-30))
+    main_panel.add_widget(label)
+    main_panel.add_widget(Image(source='red_pixel.png', allow_stretch=True,
+                                keep_ratio=False))
     actionpanel.add_widget(main_panel)
-    main_panel.bind(size=main_panel.setter('text_size'))
+    label.bind(size=label.setter('text_size'))
     
     Window.add_widget(actionpanel)
 
