@@ -13,6 +13,6 @@ containing a list of menu items to navigate the app.
 Todo
 ----
 
-Make touch input work correctly (left of screen, swipe length options)
 
-Add side of screen options
+Add side of screen option
+Improve touch management
