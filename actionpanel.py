@@ -72,7 +72,7 @@ class ActionPanel(StencilView):
     # Defaults (see kv) to minimum of 300dp or half actionpanel width
 
     # Touch properties
-    touch_accept_width = NumericProperty('10dp')
+    touch_accept_width = NumericProperty('20dp')
 
     # Animation properties
     _touch = ObjectProperty(None, allownone=True)
