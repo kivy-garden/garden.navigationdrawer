@@ -12,7 +12,8 @@ NavigationDrawer lets the user add any kivy widget for the role of side
 panel and main panel. A normal usage might be to have a GridLayout
 containing a list of menu items to navigate the app.
 
-The file example.mp4 is a short video of this behaviour.
+The file example.mp4 is a short video of this behaviour. It can also
+be viewed at www.youtube.com/watch?v=VnXgn5L5r28&feature=youtu.be
 
 Todo
 ----
