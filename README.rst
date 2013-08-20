@@ -1,4 +1,5 @@
-# ActionSlider
+ActionSlider
+============
 
 ActionSlider is a kivy widget to duplicate the popular android
 behaviour of having a panel hidden on the left of the screen, which
