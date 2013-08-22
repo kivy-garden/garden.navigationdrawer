@@ -1,12 +1,62 @@
+'''NavigationDrawer
+================
+
+The NavigationDrawer widget provides a hidden panel view designed to
+duplicate the popular Android layout.  The user views one main widget
+but can slide from the left of the screen to view a second, previously
+hidden widget. The transition between open/closed is smoothly
+animated, with the parameters (anim time, panel width, touch
+detection) all user configurable. If the panel is released without
+being fully open or closed, it animates to an appropriate
+configuration.
+
+The hidden panel might normally a set of navigation buttons, but the
+implementation lets the user use any widget(s).
+
+The first widget added to the NavigationDrawer is automatically used
+as the side panel, and the second widget as the main panel. No further
+widgets can be added, further changes are left to the user via editing
+the panel widgets.
+
+Example::
+
+    class ExampleApp(App):
+        def build(self):
+            navigationdrawer = NavigationDrawer()
+
+            side_panel = BoxLayout(orientation='vertical')
+            side_panel.add_widget(Label(text='Panel label'))
+            side_panel.add_widget(Button(text='A button'))
+            side_panel.add_widget(Button(text='Another button'))
+            navigationdrawer.add_widget(side_panel)
+
+            label_head = '[b]Example label filling main panel[/b]\n\n[color=ff0000](pull from left to right!)[/color]\n\nIn this example, the left panel is a simple boxlayout menu, and this main panel is a BoxLayout with a label and example image.\n\n'
+            main_panel = BoxLayout(orientation='vertical')
+            label = Label(text=label_head+riker, font_size='15sp',
+                               markup=True, valign='top', padding=(-30,-30))
+            main_panel.add_widget(label)
+            navigationdrawer.add_widget(main_panel)
+            label.bind(size=label.setter('text_size'))
+            button = Button(text='toggle NavigationDrawer state (animate)', size_hint_y=0.2)
+            button.bind(on_press=lambda j: navigationdrawer.toggle_state())
+            button2 = Button(text='toggle NavigationDrawer state (jump)', size_hint_y=0.2)
+            button2.bind(on_press=lambda j: navigationdrawer.toggle_state(False))
+            main_panel.add_widget(button)
+            main_panel.add_widget(button2)
+
+            return navigationdrawer
+
+    ExampleApp().run()
+
 '''
-NavigationDrawer
-'''
+
+__all__ = ('NavigationDrawer', )
 
 from kivy.animation import Animation
 from kivy.uix.widget import Widget
 from kivy.uix.stencilview import StencilView
 from kivy.metrics import dp
-from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty, ListProperty, AliasProperty, StringProperty, DictProperty, BooleanProperty, StringProperty, OptionProperty, BoundedNumericProperty
+from kivy.properties import ObjectProperty, NumericProperty, OptionProperty
 
 from kivy.lang import Builder
 
@@ -24,7 +74,7 @@ Builder.load_string('''
         width: root.side_panel_width
     BoxLayout:
         id: mainpanel
-        x: root.x + root.anim_progress*root.side_panel_width
+        x: root.x + root._anim_progress*root.side_panel_width
         y: root.y
         size: root.size
         canvas:
@@ -46,7 +96,7 @@ Builder.load_string('''
 ''')
 
 class NavigationDrawerException(Exception):
-    '''Raised when add_widget or remove_widget called incorrectly on an NavigationDrawer.
+    '''Raised when add_widget or remove_widget called incorrectly on a NavigationDrawer.
 
     '''
 
@@ -54,31 +104,45 @@ class NavigationDrawerException(Exception):
 class NavigationDrawer(StencilView):
     '''Widget taking two children, a side panel and a main panel,
     displaying them in a way that replicates the popular Android
-    functionality (e.g. from ActionBarSherlock?).
+    functionality. See module documentation for more info.
 
     '''
 
-    # Automatically bound to the first and second child widgets respectively.
-    # Side panel may be shown by sliding out the main panel.
+    # Internal references for side, main and image widgets
     _side_panel = ObjectProperty()
     _main_panel = ObjectProperty()
     _join_image = ObjectProperty()
+
     side_panel = ObjectProperty(None, allownone=True)
+    '''Automatically bound to whatever widget is added as the hidden panel.'''
     main_panel = ObjectProperty(None, allownone=True)
+    '''Automatically bound to whatever widget is added as the main panel.'''
 
     side_panel_width = NumericProperty()
-    # Defaults (see kv) to minimum of 300dp or half navigationdrawer width
+    '''The width of the hidden side panel. Defaults to the minimum of
+250dp or half the NavigationDrawer width.'''
 
     # Touch properties
-    touch_accept_width = NumericProperty('20dp')
+    touch_accept_width = NumericProperty('9dp')
+    '''Distance from the left of the NavigationDrawer in which to grab the
+touch and allow revealing of the hidden panel.'''
+    _touch = ObjectProperty(None, allownone=True) # The currently active touch
 
     # Animation properties
-    _touch = ObjectProperty(None, allownone=True)
     state = OptionProperty('closed',options=('open','closed'))
-    anim_progress = NumericProperty(0)
-    anim_time = NumericProperty(0.3) # Animation open/close time
+    '''Specifies the state of the widget. Must be one of 'open' or
+'closed'. Setting its value automatically jumps to the relevant state,
+or users may use the anim_to_state() method to animate the
+transition.'''
+    anim_time = NumericProperty(0.3)
+    '''The time taken for the panel to slide to the open/closed state when
+released or manually animated with anim_to_state.'''
     min_dist_to_open = NumericProperty(0.7)
-    panel_init_x = NumericProperty(0)
+    '''Must be between 0 and 1. Specifies the fraction of the hidden panel width beyond which the NavigationDrawer will relax to open state when released. Defaults to 0.7.'''
+    _anim_progress = NumericProperty(0) # Internal state controlling
+                                        # widget positions
+    _panel_init_x = NumericProperty(0) # Keeps track of where the main
+                                       # panel was on touch down
 
     def add_widget(self, widget):
         if len(self.children) == 0:
@@ -112,6 +176,9 @@ class NavigationDrawer(StencilView):
                 'Widget is neither the side or main panel, can\'t remove it.')
 
     def set_side_panel(self, widget):
+        '''Removes any existing side panel widgets, and replaces them with the
+        argument `widget`.
+        '''
         # Clear existing side panel entries
         if len(self._side_panel.children) > 0:
             for child in self._side_panel.children:
@@ -120,6 +187,9 @@ class NavigationDrawer(StencilView):
         self._side_panel.add_widget(widget)
         self.side_panel = widget
     def set_main_panel(self, widget):
+        '''Removes any existing main panel widgets, and replaces them with the
+        argument `widget`.
+        '''
         # Clear existing side panel entries
         if len(self._main_panel.children) > 0:
             for child in self._main_panel.children:
@@ -128,31 +198,36 @@ class NavigationDrawer(StencilView):
         self._main_panel.add_widget(widget)
         self.main_panel = widget
 
-    def on_anim_progress(self, *args):
-        if self.anim_progress > 1:
-            self.anim_progress = 1
-        elif self.anim_progress < 0:
-            self.anim_progress = 0
-        if self.anim_progress >= 1:
+    def on__anim_progress(self, *args):
+        if self._anim_progress > 1:
+            self._anim_progress = 1
+        elif self._anim_progress < 0:
+            self._anim_progress = 0
+        if self._anim_progress >= 1:
             self.state = 'open'
-        elif self.anim_progress <= 0:
+        elif self._anim_progress <= 0:
             self.state = 'closed'
 
     def on_state(self, *args):
         Animation.cancel_all(self)
         if self.state == 'open':
-            self.anim_progress = 1
+            self._anim_progress = 1
         else:
-            self.anim_progress = 0
+            self._anim_progress = 0
 
     def anim_to_state(self, state):
+        '''If not already in state `state`, animates smoothly to it, taking
+        the time given by self.anim_time. State may be either 'open'
+        or 'closed'.
+
+        '''
         if state == 'open':
-            anim = Animation(anim_progress=1,
+            anim = Animation(_anim_progress=1,
                              duration=self.anim_time,
                              t='out_cubic')
             anim.start(self)
         elif state == 'closed':
-            anim = Animation(anim_progress=0,
+            anim = Animation(_anim_progress=0,
                              duration=self.anim_time,
                              t='out_cubic')
             anim.start(self)
@@ -162,7 +237,7 @@ class NavigationDrawer(StencilView):
 
     def toggle_state(self, animate=True):
         '''Toggles from open to closed or vice versa, optionally animating or
-simply jumping.'''
+        simply jumping.'''
         if self.state == 'open':
             if animate:
                 self.anim_to_state('closed')
@@ -178,7 +253,7 @@ simply jumping.'''
         if not self.collide_point(*touch.pos) or self._touch is not None:
             super(NavigationDrawer, self).on_touch_down(touch)
             return 
-        if self.anim_progress > 0.001:
+        if self._anim_progress > 0.001:
             valid_region = self._main_panel.x <= touch.x <= (self._main_panel.x + self._main_panel.width)
         else:
             valid_region = self.x <= touch.x <= (self.x + self.touch_accept_width)
@@ -196,7 +271,7 @@ simply jumping.'''
         if touch is self._touch:
             dx = touch.x - touch.ox
             
-            self.anim_progress = max(0,min((self._panel_init_x + dx) / self.side_panel_width,1))
+            self._anim_progress = max(0,min((self._panel_init_x + dx) / self.side_panel_width,1))
         else:
             super(NavigationDrawer, self).on_touch_move(touch)
             return
@@ -207,7 +282,7 @@ simply jumping.'''
             init_state = touch.ud['type']
             touch.ungrab(self)
             if init_state == 'open':
-                if self.anim_progress >= 0.975:
+                if self._anim_progress >= 0.975:
                         self.anim_to_state('closed')
                 else:
                     self._anim_relax()
@@ -222,7 +297,7 @@ simply jumping.'''
         current position is past self.min_dist_to_open.
 
         '''
-        if self.anim_progress > self.min_dist_to_open:
+        if self._anim_progress > self.min_dist_to_open:
             self.anim_to_state('open')
         else:
             self.anim_to_state('closed')

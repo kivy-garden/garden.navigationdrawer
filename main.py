@@ -43,6 +43,9 @@ class ExampleApp(App):
 
         return navigationdrawer
 
+    def on_pause(self):
+        return True
+
 
 if __name__ == '__main__':
     ExampleApp().run()
