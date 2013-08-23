@@ -10,6 +10,13 @@ detection) all user configurable. If the panel is released without
 being fully open or closed, it animates to an appropriate
 configuration.
 
+NavigationDrawer supports many different animation properties,
+including moving one or both of the side/main panels, darkening
+either/both widgets, changing side panel opacity, and changing which
+widget is on top. The user can edit these individually to taste (this
+is enough rope to hang oneself, it's easy to make a useless or silly
+configuration!), or use one of a few preset animations.
+
 The hidden panel might normally a set of navigation buttons, but the
 implementation lets the user use any widget(s).
 
@@ -56,7 +63,7 @@ from kivy.animation import Animation
 from kivy.uix.widget import Widget
 from kivy.uix.stencilview import StencilView
 from kivy.metrics import dp
-from kivy.properties import ObjectProperty, NumericProperty, OptionProperty
+from kivy.properties import ObjectProperty, NumericProperty, OptionProperty, BooleanProperty
 
 from kivy.lang import Builder
 
@@ -69,12 +76,26 @@ Builder.load_string('''
     side_panel_width: min(dp(250), 0.5*self.width)
     BoxLayout:
         id: sidepanel
-        pos: root.pos
+        y: root.y
+        x: root.x - (1-root._anim_progress)*root._side_panel_init_offset*root.side_panel_width
         height: root.height
         width: root.side_panel_width
+        opacity: root._side_panel_opacity + (1-root._side_panel_opacity)*root._anim_progress
+        canvas:
+            Color:
+                rgba: (0,0,0,1)
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        canvas.after:
+            Color:
+                rgba: (0,0,0,(1-root._anim_progress)*root._main_panel_darkness)
+            Rectangle:
+                size: self.size
+                pos: self.pos
     BoxLayout:
         id: mainpanel
-        x: root.x + root._anim_progress*root.side_panel_width
+        x: root.x + root._anim_progress*root.side_panel_width*root._main_panel_final_offset
         y: root.y
         size: root.size
         canvas:
@@ -83,14 +104,21 @@ Builder.load_string('''
             Rectangle:
                 pos: self.pos
                 size: self.size
+        canvas.after:
+            Color:
+                rgba: (0,0,0,root._anim_progress*root._main_panel_darkness)
+            Rectangle:
+                size: self.size
+                pos: self.pos
     Image:
         id: joinimage
-        source: 'navigationdrawer_gradient.png'
+        opacity: min(sidepanel.opacity, 0 if root._anim_progress < 0.00001 else min(root._anim_progress*40,1))
+        source: 'navigationdrawer_gradient_rtol.png' if root._main_above else 'navigationdrawer_gradient_ltor.png'
         mipmap: False
         width: dp(7)
-        height: mainpanel.height
-        x: mainpanel.x - self.width + 1
-        y: mainpanel.y
+        height: root._side_panel.height
+        x: (mainpanel.x - self.width + 1) if root._main_above else (sidepanel.x + sidepanel.width - 1)
+        y: root.y
         allow_stretch: True
         keep_ratio: False
 ''')
@@ -143,6 +171,51 @@ released or manually animated with anim_to_state.'''
                                         # widget positions
     _panel_init_x = NumericProperty(0) # Keeps track of where the main
                                        # panel was on touch down
+
+    # Animation internal controls
+    _main_above = BooleanProperty(True)
+    _side_panel_init_offset = NumericProperty(1) # Initial offset for
+                                                 # side panel as a
+                                                 # fraction of its
+                                                 # width
+    _side_panel_darkness = NumericProperty(0)
+    # Fade out darkness for side panel in hidden state
+
+    _side_panel_opacity = NumericProperty(0.2)
+    # Fade out opacity for side panel in hidden state
+
+    _main_panel_final_offset = NumericProperty(0)
+    # Final offset for main panel as a fraction of root.side_panel_width
+
+    _main_panel_darkness = NumericProperty(0)
+    # Fade out darkness as main panel slides to offset state
+
+    anim_type = OptionProperty('hidden_underneath',
+                               options=['hidden_underneath',
+                                        'slide_from_above'])
+
+    def on__main_above(self,*args):
+        print 'on__main_above'
+        if self.main_panel is not None or self.side_panel is not None:
+            newval = self._main_above
+            print 'main above toggled', newval, self._join_image.source, self._join_image.pos, self._join_image.size
+            main_panel = self._main_panel
+            side_panel = self._side_panel
+            self.canvas.remove(main_panel.canvas)
+            self.canvas.remove(side_panel.canvas)
+            if newval:
+                self.canvas.insert(0,main_panel.canvas)
+                self.canvas.insert(0,side_panel.canvas)
+            else:
+                self.canvas.insert(0,side_panel.canvas)
+                self.canvas.insert(0,main_panel.canvas)
+
+    def toggle_main_above(self,*args):
+        if self._main_above:
+            self._main_above = False
+        else:
+            self._main_above = True
+
 
     def add_widget(self, widget):
         if len(self.children) == 0:
@@ -302,6 +375,14 @@ released or manually animated with anim_to_state.'''
         else:
             self.anim_to_state('closed')
 
+    def _choose_image(self,*args):
+        '''Chooses which image to display as the main/side separator, based on
+        _main_above.'''
+        if self._main_above:
+            return 'navigationdrawer_gradient_rtol.png'
+        else:
+            return 'navigationdrawer_gradient_ltor.png'
+
     
 if __name__ == '__main__':
     from kivy.base import runTouchApp
@@ -333,8 +414,11 @@ if __name__ == '__main__':
     button.bind(on_press=lambda j: navigationdrawer.toggle_state())
     button2 = Button(text='toggle NavigationDrawer state (jump)', size_hint_y=0.2)
     button2.bind(on_press=lambda j: navigationdrawer.toggle_state(False))
+    button3 = Button(text='toggle _main_above', size_hint_y=0.2)
+    button3.bind(on_press=navigationdrawer.toggle_main_above)
     main_panel.add_widget(button)
     main_panel.add_widget(button2)
+    main_panel.add_widget(button3)
     
     Window.add_widget(navigationdrawer)
 
