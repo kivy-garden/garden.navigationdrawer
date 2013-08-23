@@ -14,9 +14,14 @@ NavigationDrawer lets the user add any kivy widget for the role of side
 panel and main panel. A normal usage might be to have a GridLayout
 containing a list of menu items to navigate the app.
 
-The file navdrawer1.mp4 is a short video of this behaviour, showcasing
-the three (at the time of writing) default animations. All parameters
-are individually configurable so many other animations are
+The file example.mp4 is a short video showing the relaxation animation
+of the NavigationDrawer when released in between the open and closed
+states. It can also be viewed at
+http://www.youtube.com/watch?v=VnXgn5L5r28
+
+The file navdrawer1.mp4 is a short video of open/close behaviour,
+showcasing the three (at the time of writing) default animations. All
+parameters are individually configurable so many other animations are
 possible. The animation is also available at
 http://www.youtube.com/watch?v=OGTOIzI7SFs&feature=youtu.be
 
