@@ -63,7 +63,7 @@ from kivy.animation import Animation
 from kivy.uix.widget import Widget
 from kivy.uix.stencilview import StencilView
 from kivy.metrics import dp
-from kivy.properties import ObjectProperty, NumericProperty, OptionProperty, BooleanProperty
+from kivy.properties import ObjectProperty, NumericProperty, OptionProperty, BooleanProperty, StringProperty
 
 from kivy.lang import Builder
 
@@ -77,10 +77,10 @@ Builder.load_string('''
     BoxLayout:
         id: sidepanel
         y: root.y
-        x: root.x - (1-root._anim_progress)*root._side_panel_init_offset*root.side_panel_width
+        x: root.x - (1-root._anim_progress)*root.side_panel_init_offset*root.side_panel_width
         height: root.height
         width: root.side_panel_width
-        opacity: root._side_panel_opacity + (1-root._side_panel_opacity)*root._anim_progress
+        opacity: root.side_panel_opacity + (1-root.side_panel_opacity)*root._anim_progress
         canvas:
             Color:
                 rgba: (0,0,0,1)
@@ -89,13 +89,13 @@ Builder.load_string('''
                 size: self.size
         canvas.after:
             Color:
-                rgba: (0,0,0,(1-root._anim_progress)*root._main_panel_darkness)
+                rgba: (0,0,0,(1-root._anim_progress)*root.side_panel_darkness)
             Rectangle:
                 size: self.size
                 pos: self.pos
     BoxLayout:
         id: mainpanel
-        x: root.x + root._anim_progress*root.side_panel_width*root._main_panel_final_offset
+        x: root.x + root._anim_progress*root.side_panel_width*root.main_panel_final_offset
         y: root.y
         size: root.size
         canvas:
@@ -106,14 +106,14 @@ Builder.load_string('''
                 size: self.size
         canvas.after:
             Color:
-                rgba: (0,0,0,root._anim_progress*root._main_panel_darkness)
+                rgba: (0,0,0,root._anim_progress*root.main_panel_darkness)
             Rectangle:
                 size: self.size
                 pos: self.pos
     Image:
         id: joinimage
         opacity: min(sidepanel.opacity, 0 if root._anim_progress < 0.00001 else min(root._anim_progress*40,1))
-        source: 'navigationdrawer_gradient_rtol.png' if root._main_above else 'navigationdrawer_gradient_ltor.png'
+        source: root._choose_image(root._main_above) #'navigationdrawer_gradient_rtol.png' if root._main_above else 'navigationdrawer_gradient_ltor.png'
         mipmap: False
         width: dp(7)
         height: root._side_panel.height
@@ -146,9 +146,15 @@ class NavigationDrawer(StencilView):
     main_panel = ObjectProperty(None, allownone=True)
     '''Automatically bound to whatever widget is added as the main panel.'''
 
+    # Appearance properties
     side_panel_width = NumericProperty()
     '''The width of the hidden side panel. Defaults to the minimum of
 250dp or half the NavigationDrawer width.'''
+    separator_image = StringProperty('')
+    '''The path to an image that will be placed between the side and main
+    panels. If set to `''`, defaults to a gradient from black to
+    transparent in an appropriate direction (left->right if side panel
+    above main, right->left if main panel on top).'''
 
     # Touch properties
     touch_accept_width = NumericProperty('9dp')
@@ -172,27 +178,79 @@ released or manually animated with anim_to_state.'''
     _panel_init_x = NumericProperty(0) # Keeps track of where the main
                                        # panel was on touch down
 
-    # Animation internal controls
+    # Animation controls
+    top_panel = OptionProperty('main', options=['main', 'side'])
+    '''Denotes which panel should be drawn on top of the other. Must be
+    one of 'main' or 'side'. Defaults to 'main'.'''
     _main_above = BooleanProperty(True)
-    _side_panel_init_offset = NumericProperty(1) # Initial offset for
-                                                 # side panel as a
-                                                 # fraction of its
-                                                 # width
-    _side_panel_darkness = NumericProperty(0)
-    # Fade out darkness for side panel in hidden state
 
-    _side_panel_opacity = NumericProperty(0.2)
-    # Fade out opacity for side panel in hidden state
+    side_panel_init_offset = NumericProperty(0.5)
+    '''Intial offset (to the left of the widget) of the side panel, in
+units of its total width. Opening the panel moves it smoothly to its
+final position at the left of the screen.'''
 
-    _main_panel_final_offset = NumericProperty(0)
+    side_panel_darkness = NumericProperty(0.8)
+    '''Controls the fade-to-black of the side panel in its hidden
+    state. Must be between 0 (no fading) and 1 (fades to totally
+    black).'''
+
+    side_panel_opacity = NumericProperty(1)
+    '''Controls the opacity of the side panel in its hidden state. Must be
+    between 0 (fade to transparent) and 1 (no transparency)'''
+
+    main_panel_final_offset = NumericProperty(1)
+    '''Final offset (to the right of the normal position) of the main panel, in units of the side panel width.'''
     # Final offset for main panel as a fraction of root.side_panel_width
 
-    _main_panel_darkness = NumericProperty(0)
-    # Fade out darkness as main panel slides to offset state
+    main_panel_darkness = NumericProperty(0)
+    '''Controls the fade-to-black of the main panel when the side panel is
+    in its hidden state. Must be between 0 (no fading) and 1 (fades to
+    totally black).
+    '''
 
-    anim_type = OptionProperty('hidden_underneath',
-                               options=['hidden_underneath',
-                                        'slide_from_above'])
+    anim_type = OptionProperty('reveal_from_below',
+                               options=['slide_in',
+                                        'fade_in',
+                                        'reveal_from_below',
+                                        ])
+    '''The default animation type to use. Several options are available,
+    modifying all possibly animation properties including darkness,
+    opacity, movement and draw height. Users may also (and are
+    encouaged to) edit these properties individually, for a vastly
+    larger range of possible animations.
+
+    '''
+
+    def on_anim_type(self, *args):
+        anim_type = self.anim_type
+        print 'on_anim_type',anim_type
+        if anim_type == 'slide_in':
+            self.top_panel = 'side'
+            self.side_panel_darkness = 0
+            self.side_panel_opacity = 1
+            self.main_panel_final_offset = 0.5
+            self.main_panel_darkness = 0.5
+            self.side_panel_init_offset = 1
+        elif anim_type == 'fade_in':
+            self.top_panel = 'side'
+            self.side_panel_darkness = 0
+            self.side_panel_opacity = 0
+            self.main_panel_final_offset = 0
+            self.main_panel_darkness = 0
+            self.side_panel_init_offset = 0.5
+        elif anim_type == 'reveal_from_below':
+            self.top_panel = 'main'
+            self.side_panel_darkness = 0.8
+            self.side_panel_opacity = 1
+            self.main_panel_final_offset = 1
+            self.main_panel_darkness = 0
+            self.side_panel_init_offset = 0.5
+    
+    def on_top_panel(self, *args):
+        if self.top_panel == 'main':
+            self._main_above = True
+        else:
+            self._main_above = False
 
     def on__main_above(self,*args):
         print 'on__main_above'
@@ -378,6 +436,8 @@ released or manually animated with anim_to_state.'''
     def _choose_image(self,*args):
         '''Chooses which image to display as the main/side separator, based on
         _main_above.'''
+        if self.separator_image:
+            return self.separator_image
         if self._main_above:
             return 'navigationdrawer_gradient_rtol.png'
         else:
@@ -400,16 +460,39 @@ if __name__ == '__main__':
     side_panel.add_widget(Button(text='Another button'))
     navigationdrawer.add_widget(side_panel)
 
-    label_head = '[b]Example label filling main panel[/b]\n\n[color=ff0000](pull from left to right!)[/color]\n\nIn this example, the left panel is a simple boxlayout menu, and this main panel is a BoxLayout with a label and example image.\n\n'
-    riker = "Some days you get the bear, and some days the bear gets you. I am your worst nightmare! You enjoyed that. When has justice ever been as simple as a rule book? For an android with no feelings, he sure managed to evoke them in others. Flair is what marks the difference between artistry and mere competence. Worf, It's better than music. It's jazz. The game's not big enough unless it scares you a little. We finished our first sensor sweep of the neutral zone. Your head is not an artifact! What? We're not at all alike!"
+    label_head = '''[b]Example label filling main panel[/b]\n\n[color=ff0000](pull from left to right!)[/color]\n\nIn this example, the left panel is a simple boxlayout menu, and this main panel is a BoxLayout with a label and example image.\n\nSeveral preset layouts are available (see buttons below), but users may edit every parameter for much more customisation.'''
     main_panel = BoxLayout(orientation='vertical')
-    label = Label(text=label_head+riker, font_size='15sp',
-                       markup=True, valign='top', padding=(-30,-30))
-    main_panel.add_widget(label)
+    label_bl = BoxLayout(orientation='horizontal')
+    label = Label(text=label_head, font_size='15sp',
+                       markup=True, valign='top')
+    label_bl.add_widget(Widget(size_hint_x=None, width=dp(10)))
+    label_bl.add_widget(label)
+    label_bl.add_widget(Widget(size_hint_x=None, width=dp(10)))
+    main_panel.add_widget(Widget(size_hint_y=None, height=dp(10)))
+    main_panel.add_widget(label_bl)
+    main_panel.add_widget(Widget(size_hint_y=None, height=dp(10)))
     main_panel.add_widget(Image(source='red_pixel.png', allow_stretch=True,
-                                keep_ratio=False))
+                                keep_ratio=False, size_hint_y=0.2))
     navigationdrawer.add_widget(main_panel)
     label.bind(size=label.setter('text_size'))
+
+    def set_anim_type(name):
+        print 'set_anim_type',name
+        navigationdrawer.anim_type = name
+    modes_layout = BoxLayout(orientation='horizontal')
+    modes_layout.add_widget(Label(text='preset\nanims:'))
+    slide_in_button = Button(text='slide_in')
+    slide_in_button.bind(on_press=lambda j: set_anim_type('slide_in'))
+    fade_in_button = Button(text='fade_in')
+    fade_in_button.bind(on_press=lambda j: set_anim_type('fade_in'))
+    reveal_button = Button(text='reveal_\nfrom_\nbelow')
+    reveal_button.bind(on_press=lambda j: set_anim_type('reveal_from_below'))
+    modes_layout.add_widget(slide_in_button)
+    modes_layout.add_widget(fade_in_button)
+    modes_layout.add_widget(reveal_button)
+    main_panel.add_widget(modes_layout)
+
+    
     button = Button(text='toggle NavigationDrawer state (animate)', size_hint_y=0.2)
     button.bind(on_press=lambda j: navigationdrawer.toggle_state())
     button2 = Button(text='toggle NavigationDrawer state (jump)', size_hint_y=0.2)
