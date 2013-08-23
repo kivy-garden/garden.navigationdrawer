@@ -115,7 +115,7 @@ Builder.load_string('''
         opacity: min(sidepanel.opacity, 0 if root._anim_progress < 0.00001 else min(root._anim_progress*40,1))
         source: root._choose_image(root._main_above) #'navigationdrawer_gradient_rtol.png' if root._main_above else 'navigationdrawer_gradient_ltor.png'
         mipmap: False
-        width: dp(7)
+        width: root.separator_image_width
         height: root._side_panel.height
         x: (mainpanel.x - self.width + 1) if root._main_above else (sidepanel.x + sidepanel.width - 1)
         y: root.y
@@ -155,6 +155,8 @@ class NavigationDrawer(StencilView):
     panels. If set to `''`, defaults to a gradient from black to
     transparent in an appropriate direction (left->right if side panel
     above main, right->left if main panel on top).'''
+    separator_image_width = NumericProperty(dp(10))
+    '''The width of the separator image.'''
 
     # Touch properties
     touch_accept_width = NumericProperty('9dp')
@@ -175,7 +177,7 @@ released or manually animated with anim_to_state.'''
     '''Must be between 0 and 1. Specifies the fraction of the hidden panel width beyond which the NavigationDrawer will relax to open state when released. Defaults to 0.7.'''
     _anim_progress = NumericProperty(0) # Internal state controlling
                                         # widget positions
-    _panel_init_x = NumericProperty(0) # Keeps track of where the main
+    _anim_init_progress = NumericProperty(0) # Keeps track of where the main
                                        # panel was on touch down
 
     # Animation controls
@@ -223,7 +225,6 @@ final position at the left of the screen.'''
 
     def on_anim_type(self, *args):
         anim_type = self.anim_type
-        print 'on_anim_type',anim_type
         if anim_type == 'slide_in':
             self.top_panel = 'side'
             self.side_panel_darkness = 0
@@ -253,10 +254,8 @@ final position at the left of the screen.'''
             self._main_above = False
 
     def on__main_above(self,*args):
-        print 'on__main_above'
         if self.main_panel is not None or self.side_panel is not None:
             newval = self._main_above
-            print 'main above toggled', newval, self._join_image.source, self._join_image.pos, self._join_image.size
             main_panel = self._main_panel
             side_panel = self._side_panel
             self.canvas.remove(main_panel.canvas)
@@ -330,6 +329,7 @@ final position at the left of the screen.'''
         self.main_panel = widget
 
     def on__anim_progress(self, *args):
+        print 'anim_progress changed to',self._anim_progress
         if self._anim_progress > 1:
             self._anim_progress = 1
         elif self._anim_progress < 0:
@@ -340,6 +340,7 @@ final position at the left of the screen.'''
             self.state = 'closed'
 
     def on_state(self, *args):
+        print 'state!',self.state
         Animation.cancel_all(self)
         if self.state == 'open':
             self._anim_progress = 1
@@ -381,6 +382,7 @@ final position at the left of the screen.'''
                 self.state = 'open'
 
     def on_touch_down(self, touch):
+        print 'touch down on navigationdrawer',self.collide_point(*touch.pos)
         if not self.collide_point(*touch.pos) or self._touch is not None:
             super(NavigationDrawer, self).on_touch_down(touch)
             return 
@@ -392,17 +394,23 @@ final position at the left of the screen.'''
             super(NavigationDrawer, self).on_touch_down(touch)
             return False
         Animation.cancel_all(self)
-        self._panel_init_x = self._main_panel.x
+        print 'setting _anim_init_progress to',self._main_panel.x
+        self._anim_init_progress = self._anim_progress
         self._touch = touch
         touch.ud['type'] = self.state
+        touch.ud['panels_jiggled'] = False # If user moved panels back
+                                           # and forth, don't default
+                                           # to close on touch release
         touch.grab(self)
         return True
 
     def on_touch_move(self, touch):
+        print 'first on_touch_move'
         if touch is self._touch:
             dx = touch.x - touch.ox
-            
-            self._anim_progress = max(0,min((self._panel_init_x + dx) / self.side_panel_width,1))
+            self._anim_progress = max(0,min(self._anim_init_progress + (dx / self.side_panel_width),1))
+            if self._anim_progress < 0.975:
+                touch.ud['panels_jiggled'] = True
         else:
             super(NavigationDrawer, self).on_touch_move(touch)
             return
@@ -412,7 +420,8 @@ final position at the left of the screen.'''
             self._touch = None
             init_state = touch.ud['type']
             touch.ungrab(self)
-            if init_state == 'open':
+            jiggled = touch.ud['panels_jiggled']
+            if init_state == 'open' and not jiggled:
                 if self._anim_progress >= 0.975:
                         self.anim_to_state('closed')
                 else:
@@ -439,7 +448,7 @@ final position at the left of the screen.'''
         if self.separator_image:
             return self.separator_image
         if self._main_above:
-            return 'navigationdrawer_gradient_rtol.png'
+            return 'navigationdrawer_gradient_rtol2.png'
         else:
             return 'navigationdrawer_gradient_ltor.png'
 
@@ -477,7 +486,6 @@ if __name__ == '__main__':
     label.bind(size=label.setter('text_size'))
 
     def set_anim_type(name):
-        print 'set_anim_type',name
         navigationdrawer.anim_type = name
     modes_layout = BoxLayout(orientation='horizontal')
     modes_layout.add_widget(Label(text='preset\nanims:'))
