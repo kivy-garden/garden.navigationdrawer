@@ -181,7 +181,7 @@ Builder.load_string('''
         id: joinimage
         opacity: min(sidepanel.opacity, 0 if root._anim_progress < 0.00001 \
                  else min(root._anim_progress*40,1))
-        source: root._choose_image(root._main_above)
+        source: root._choose_image(root._main_above, root.separator_image)
         mipmap: False
         width: root.separator_image_width
         height: root._side_panel.height
@@ -381,7 +381,8 @@ class NavigationDrawer(StencilView):
             self.main_panel = widget
         else:
             raise NavigationDrawerException(
-                'Can\'t add widgets directly to NavigationDrawer')
+                'Can\'t add more than two widgets'
+                'directly to NavigationDrawer')
 
     def remove_widget(self, widget):
         if widget is self.side_panel:
