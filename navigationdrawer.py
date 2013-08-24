@@ -329,7 +329,6 @@ final position at the left of the screen.'''
         self.main_panel = widget
 
     def on__anim_progress(self, *args):
-        print 'anim_progress changed to',self._anim_progress
         if self._anim_progress > 1:
             self._anim_progress = 1
         elif self._anim_progress < 0:
@@ -340,7 +339,6 @@ final position at the left of the screen.'''
             self.state = 'closed'
 
     def on_state(self, *args):
-        print 'state!',self.state
         Animation.cancel_all(self)
         if self.state == 'open':
             self._anim_progress = 1
@@ -382,19 +380,26 @@ final position at the left of the screen.'''
                 self.state = 'open'
 
     def on_touch_down(self, touch):
-        print 'touch down on navigationdrawer',self.collide_point(*touch.pos)
-        if not self.collide_point(*touch.pos) or self._touch is not None:
+        col_self = self.collide_point(*touch.pos)
+        col_side = self._side_panel.collide_point(*touch.pos)
+        if (not col_self or
+            (col_side and not self._main_above and self._anim_progress > 0) or
+            # Touch above both main and side, but side on top
+            self._touch is not None):
             super(NavigationDrawer, self).on_touch_down(touch)
             return 
         if self._anim_progress > 0.001:
-            valid_region = self._main_panel.x <= touch.x <= (self._main_panel.x + self._main_panel.width)
+            valid_region = (self._main_panel.x <=
+                            touch.x <=
+                            (self._main_panel.x + self._main_panel.width))
         else:
-            valid_region = self.x <= touch.x <= (self.x + self.touch_accept_width)
+            valid_region = (self.x <=
+                            touch.x <=
+                            (self.x + self.touch_accept_width))
         if not valid_region:
             super(NavigationDrawer, self).on_touch_down(touch)
             return False
         Animation.cancel_all(self)
-        print 'setting _anim_init_progress to',self._main_panel.x
         self._anim_init_progress = self._anim_progress
         self._touch = touch
         touch.ud['type'] = self.state
@@ -405,7 +410,6 @@ final position at the left of the screen.'''
         return True
 
     def on_touch_move(self, touch):
-        print 'first on_touch_move'
         if touch is self._touch:
             dx = touch.x - touch.ox
             self._anim_progress = max(0,min(self._anim_init_progress + (dx / self.side_panel_width),1))
@@ -448,9 +452,9 @@ final position at the left of the screen.'''
         if self.separator_image:
             return self.separator_image
         if self._main_above:
-            return 'navigationdrawer_gradient_rtol2.png'
+            return 'navigationdrawer_gradient_rtol3.png'
         else:
-            return 'navigationdrawer_gradient_ltor.png'
+            return 'navigationdrawer_gradient_ltor3.png'
 
     
 if __name__ == '__main__':
