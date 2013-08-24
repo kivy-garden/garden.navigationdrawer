@@ -16,8 +16,8 @@ from navigationdrawer import NavigationDrawer
 
 
 class ExampleApp(App):
+
     def build(self):
-    
         navigationdrawer = NavigationDrawer()
 
         side_panel = BoxLayout(orientation='vertical')
@@ -26,11 +26,17 @@ class ExampleApp(App):
         side_panel.add_widget(Button(text='Another button'))
         navigationdrawer.add_widget(side_panel)
 
-        label_head = '''[b]Example label filling main panel[/b]\n\n[color=ff0000](pull from left to right!)[/color]\n\nIn this example, the left panel is a simple boxlayout menu, and this main panel is a BoxLayout with a label and example image.\n\nSeveral preset layouts are available (see buttons below), but users may edit every parameter for much more customisation.'''
+        label_head = (
+            '[b]Example label filling main panel[/b]\n\n[color=ff0000](p'
+            'ull from left to right!)[/color]\n\nIn this example, the le'
+            'ft panel is a simple boxlayout menu, and this main panel is'
+            ' a BoxLayout with a label and example image.\n\nSeveral pre'
+            'set layouts are available (see buttons below), but users ma'
+            'y edit every parameter for much more customisation.')
         main_panel = BoxLayout(orientation='vertical')
         label_bl = BoxLayout(orientation='horizontal')
         label = Label(text=label_head, font_size='15sp',
-                           markup=True, valign='top')
+                      markup=True, valign='top')
         label_bl.add_widget(Widget(size_hint_x=None, width=dp(10)))
         label_bl.add_widget(label)
         label_bl.add_widget(Widget(size_hint_x=None, width=dp(10)))
@@ -46,20 +52,24 @@ class ExampleApp(App):
             navigationdrawer.anim_type = name
         modes_layout = BoxLayout(orientation='horizontal')
         modes_layout.add_widget(Label(text='preset\nanims:'))
-        slide_in_button = Button(text='slide_in')
-        slide_in_button.bind(on_press=lambda j: set_anim_type('slide_in'))
+        slide_an = Button(text='slide_\nabove_\nanim')
+        slide_an.bind(on_press=lambda j: set_anim_type('slide_above_anim'))
+        slide_sim = Button(text='slide_\nabove_\nsimple')
+        slide_sim.bind(on_press=lambda j: set_anim_type('slide_above_simple'))
         fade_in_button = Button(text='fade_in')
         fade_in_button.bind(on_press=lambda j: set_anim_type('fade_in'))
-        reveal_button = Button(text='reveal_\nwith_\nanim')
-        reveal_button.bind(on_press=lambda j: set_anim_type('reveal_with_anim'))
-        slide_button = Button(text='reveal_\nsimple')
-        slide_button.bind(on_press=lambda j: set_anim_type('reveal_simple'))
-        modes_layout.add_widget(slide_in_button)
+        reveal_button = Button(text='reveal_\nbelow_\nanim')
+        reveal_button.bind(on_press=
+                           lambda j: set_anim_type('reveal_below_anim'))
+        slide_button = Button(text='reveal_\nbelow_\nsimple')
+        slide_button.bind(on_press=
+                          lambda j: set_anim_type('reveal_below_simple'))
+        modes_layout.add_widget(slide_an)
+        modes_layout.add_widget(slide_sim)
         modes_layout.add_widget(fade_in_button)
         modes_layout.add_widget(reveal_button)
         modes_layout.add_widget(slide_button)
         main_panel.add_widget(modes_layout)
-
 
         button = Button(text='toggle NavigationDrawer state (animate)',
                         size_hint_y=0.2)
@@ -81,6 +91,3 @@ class ExampleApp(App):
 
 if __name__ == '__main__':
     ExampleApp().run()
-
-
-    

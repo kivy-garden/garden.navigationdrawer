@@ -27,31 +27,6 @@ the panel widgets.
 
 Example::
 
-    class ExampleApp(App):
-        def build(self):
-            navigationdrawer = NavigationDrawer()
-
-            side_panel = BoxLayout(orientation='vertical')
-            side_panel.add_widget(Label(text='Panel label'))
-            side_panel.add_widget(Button(text='A button'))
-            side_panel.add_widget(Button(text='Another button'))
-            navigationdrawer.add_widget(side_panel)
-
-            label_head = '[b]Example label filling main panel[/b]\n\n[color=ff0000](pull from left to right!)[/color]\n\nIn this example, the left panel is a simple boxlayout menu, and this main panel is a BoxLayout with a label and example image.\n\n'
-            main_panel = BoxLayout(orientation='vertical')
-            label = Label(text=label_head+riker, font_size='15sp',
-                               markup=True, valign='top', padding=(-30,-30))
-            main_panel.add_widget(label)
-            navigationdrawer.add_widget(main_panel)
-            label.bind(size=label.setter('text_size'))
-            button = Button(text='toggle NavigationDrawer state (animate)', size_hint_y=0.2)
-            button.bind(on_press=lambda j: navigationdrawer.toggle_state())
-            button2 = Button(text='toggle NavigationDrawer state (jump)', size_hint_y=0.2)
-            button2.bind(on_press=lambda j: navigationdrawer.toggle_state(False))
-            main_panel.add_widget(button)
-            main_panel.add_widget(button2)
-
-            return navigationdrawer
 
     ExampleApp().run()
 
@@ -78,10 +53,13 @@ Builder.load_string('''
     BoxLayout:
         id: sidepanel
         y: root.y
-        x: root.x - (1-root._anim_progress)*root.side_panel_init_offset*root.side_panel_width
+        x: root.x - \
+           (1-root._anim_progress)* \
+           root.side_panel_init_offset*root.side_panel_width
         height: root.height
         width: root.side_panel_width
-        opacity: root.side_panel_opacity + (1-root.side_panel_opacity)*root._anim_progress
+        opacity: root.side_panel_opacity + \
+                 (1-root.side_panel_opacity)*root._anim_progress
         canvas:
             Color:
                 rgba: (0,0,0,1)
@@ -96,7 +74,10 @@ Builder.load_string('''
                 pos: self.pos
     BoxLayout:
         id: mainpanel
-        x: root.x + root._anim_progress*root.side_panel_width*root.main_panel_final_offset
+        x: root.x + \
+           root._anim_progress * \
+           root.side_panel_width * \
+           root.main_panel_final_offset
         y: root.y
         size: root.size
         canvas:
@@ -113,16 +94,19 @@ Builder.load_string('''
                 pos: self.pos
     Image:
         id: joinimage
-        opacity: min(sidepanel.opacity, 0 if root._anim_progress < 0.00001 else min(root._anim_progress*40,1))
-        source: root._choose_image(root._main_above) #'navigationdrawer_gradient_rtol.png' if root._main_above else 'navigationdrawer_gradient_ltor.png'
+        opacity: min(sidepanel.opacity, 0 if root._anim_progress < 0.00001 \
+                 else min(root._anim_progress*40,1))
+        source: root._choose_image(root._main_above)
         mipmap: False
         width: root.separator_image_width
         height: root._side_panel.height
-        x: (mainpanel.x - self.width + 1) if root._main_above else (sidepanel.x + sidepanel.width - 1)
+        x: (mainpanel.x - self.width + 1) if root._main_above \
+           else (sidepanel.x + sidepanel.width - 1)
         y: root.y
         allow_stretch: True
         keep_ratio: False
 ''')
+
 
 class NavigationDrawerException(Exception):
     '''Raised when add_widget or remove_widget called incorrectly on a
@@ -164,10 +148,10 @@ class NavigationDrawer(StencilView):
     touch_accept_width = NumericProperty('14dp')
     '''Distance from the left of the NavigationDrawer in which to grab the
     touch and allow revealing of the hidden panel.'''
-    _touch = ObjectProperty(None, allownone=True) # The currently active touch
+    _touch = ObjectProperty(None, allownone=True)  # The currently active touch
 
     # Animation properties
-    state = OptionProperty('closed',options=('open','closed'))
+    state = OptionProperty('closed', options=('open', 'closed'))
     '''Specifies the state of the widget. Must be one of 'open' or
     'closed'. Setting its value automatically jumps to the relevant state,
     or users may use the anim_to_state() method to animate the
@@ -179,10 +163,9 @@ class NavigationDrawer(StencilView):
     '''Must be between 0 and 1. Specifies the fraction of the hidden panel
     width beyond which the NavigationDrawer will relax to open state when
     released. Defaults to 0.7.'''
-    _anim_progress = NumericProperty(0) # Internal state controlling
-                                        # widget positions
-    _anim_init_progress = NumericProperty(0) # Keeps track of where the main
-                                       # panel was on touch down
+    _anim_progress = NumericProperty(0)  # Internal state controlling
+                                         # widget positions
+    _anim_init_progress = NumericProperty(0)
 
     # Animation controls
     top_panel = OptionProperty('main', options=['main', 'side'])
@@ -215,26 +198,34 @@ class NavigationDrawer(StencilView):
     '''
 
     anim_type = OptionProperty('reveal_from_below',
-                               options=['slide_in',
+                               options=['slide_above_anim',
+                                        'slide_above_simple',
                                         'fade_in',
-                                        'reveal_with_anim',
-                                        'reveal_simple',
+                                        'reveal_below_anim',
+                                        'reveal_below_simple',
                                         ])
     '''The default animation type to use. Several options are available,
     modifying all possibly animation properties including darkness,
     opacity, movement and draw height. Users may also (and are
     encouaged to) edit these properties individually, for a vastly
-    larger range of possible animations. Defaults to reveal_with_anim.
+    larger range of possible animations. Defaults to reveal_below_anim.
     '''
 
     def on_anim_type(self, *args):
         anim_type = self.anim_type
-        if anim_type == 'slide_in':
+        if anim_type == 'slide_above_anim':
             self.top_panel = 'side'
             self.side_panel_darkness = 0
             self.side_panel_opacity = 1
             self.main_panel_final_offset = 0.5
             self.main_panel_darkness = 0.5
+            self.side_panel_init_offset = 1
+        if anim_type == 'slide_above_simple':
+            self.top_panel = 'side'
+            self.side_panel_darkness = 0
+            self.side_panel_opacity = 1
+            self.main_panel_final_offset = 0
+            self.main_panel_darkness = 0
             self.side_panel_init_offset = 1
         elif anim_type == 'fade_in':
             self.top_panel = 'side'
@@ -243,29 +234,28 @@ class NavigationDrawer(StencilView):
             self.main_panel_final_offset = 0
             self.main_panel_darkness = 0
             self.side_panel_init_offset = 0.5
-        elif anim_type == 'reveal_with_anim':
+        elif anim_type == 'reveal_below_anim':
             self.top_panel = 'main'
             self.side_panel_darkness = 0.8
             self.side_panel_opacity = 1
             self.main_panel_final_offset = 1
             self.main_panel_darkness = 0
             self.side_panel_init_offset = 0.5
-        elif anim_type == 'reveal_simple':
+        elif anim_type == 'reveal_below_simple':
             self.top_panel = 'main'
             self.side_panel_darkness = 0
             self.side_panel_opacity = 1
             self.main_panel_final_offset = 1
             self.main_panel_darkness = 0
             self.side_panel_init_offset = 0
-            
-    
+
     def on_top_panel(self, *args):
         if self.top_panel == 'main':
             self._main_above = True
         else:
             self._main_above = False
 
-    def on__main_above(self,*args):
+    def on__main_above(self, *args):
         if self.main_panel is not None or self.side_panel is not None:
             newval = self._main_above
             main_panel = self._main_panel
@@ -273,18 +263,17 @@ class NavigationDrawer(StencilView):
             self.canvas.remove(main_panel.canvas)
             self.canvas.remove(side_panel.canvas)
             if newval:
-                self.canvas.insert(0,main_panel.canvas)
-                self.canvas.insert(0,side_panel.canvas)
+                self.canvas.insert(0, main_panel.canvas)
+                self.canvas.insert(0, side_panel.canvas)
             else:
-                self.canvas.insert(0,side_panel.canvas)
-                self.canvas.insert(0,main_panel.canvas)
+                self.canvas.insert(0, side_panel.canvas)
+                self.canvas.insert(0, main_panel.canvas)
 
-    def toggle_main_above(self,*args):
+    def toggle_main_above(self, *args):
         if self._main_above:
             self._main_above = False
         else:
             self._main_above = True
-
 
     def add_widget(self, widget):
         if len(self.children) == 0:
@@ -328,6 +317,7 @@ class NavigationDrawer(StencilView):
         # Set new side panel
         self._side_panel.add_widget(widget)
         self.side_panel = widget
+
     def set_main_panel(self, widget):
         '''Removes any existing main panel widgets, and replaces them with the
         argument `widget`.
@@ -399,7 +389,7 @@ class NavigationDrawer(StencilView):
             return
         if not col_self or self._touch is not None:
             super(NavigationDrawer, self).on_touch_down(touch)
-            return 
+            return
         if self._anim_progress > 0.001:
             valid_region = (self._main_panel.x <=
                             touch.x <=
@@ -415,17 +405,17 @@ class NavigationDrawer(StencilView):
         self._anim_init_progress = self._anim_progress
         self._touch = touch
         touch.ud['type'] = self.state
-        touch.ud['panels_jiggled'] = False # If user moved panels back
-                                           # and forth, don't default
-                                           # to close on touch release
+        touch.ud['panels_jiggled'] = False  # If user moved panels back
+                                            # and forth, don't default
+                                            # to close on touch release
         touch.grab(self)
         return True
 
     def on_touch_move(self, touch):
         if touch is self._touch:
             dx = touch.x - touch.ox
-            self._anim_progress = max(0,min(self._anim_init_progress +
-                                            (dx / self.side_panel_width),1))
+            self._anim_progress = max(0, min(self._anim_init_progress +
+                                            (dx / self.side_panel_width), 1))
             if self._anim_progress < 0.975:
                 touch.ud['panels_jiggled'] = True
         else:
@@ -459,7 +449,7 @@ class NavigationDrawer(StencilView):
         else:
             self.anim_to_state('closed')
 
-    def _choose_image(self,*args):
+    def _choose_image(self, *args):
         '''Chooses which image to display as the main/side separator, based on
         _main_above.'''
         if self.separator_image:
@@ -469,7 +459,6 @@ class NavigationDrawer(StencilView):
         else:
             return 'navigationdrawer_gradient_ltor3.png'
 
-    
 if __name__ == '__main__':
     from kivy.base import runTouchApp
     from kivy.uix.boxlayout import BoxLayout
@@ -477,7 +466,7 @@ if __name__ == '__main__':
     from kivy.uix.button import Button
     from kivy.uix.image import Image
     from kivy.core.window import Window
-    
+
     navigationdrawer = NavigationDrawer()
 
     side_panel = BoxLayout(orientation='vertical')
@@ -486,11 +475,17 @@ if __name__ == '__main__':
     side_panel.add_widget(Button(text='Another button'))
     navigationdrawer.add_widget(side_panel)
 
-    label_head = '''[b]Example label filling main panel[/b]\n\n[color=ff0000](pull from left to right!)[/color]\n\nIn this example, the left panel is a simple boxlayout menu, and this main panel is a BoxLayout with a label and example image.\n\nSeveral preset layouts are available (see buttons below), but users may edit every parameter for much more customisation.'''
+    label_head = (
+        '[b]Example label filling main panel[/b]\n\n[color=ff0000](p'
+        'ull from left to right!)[/color]\n\nIn this example, the le'
+        'ft panel is a simple boxlayout menu, and this main panel is'
+        ' a BoxLayout with a label and example image.\n\nSeveral pre'
+        'set layouts are available (see buttons below), but users ma'
+        'y edit every parameter for much more customisation.')
     main_panel = BoxLayout(orientation='vertical')
     label_bl = BoxLayout(orientation='horizontal')
     label = Label(text=label_head, font_size='15sp',
-                       markup=True, valign='top')
+                  markup=True, valign='top')
     label_bl.add_widget(Widget(size_hint_x=None, width=dp(10)))
     label_bl.add_widget(label)
     label_bl.add_widget(Widget(size_hint_x=None, width=dp(10)))
@@ -506,21 +501,25 @@ if __name__ == '__main__':
         navigationdrawer.anim_type = name
     modes_layout = BoxLayout(orientation='horizontal')
     modes_layout.add_widget(Label(text='preset\nanims:'))
-    slide_in_button = Button(text='slide_in')
-    slide_in_button.bind(on_press=lambda j: set_anim_type('slide_in'))
+    slide_an = Button(text='slide_\nabove_\nanim')
+    slide_an.bind(on_press=lambda j: set_anim_type('slide_above_anim'))
+    slide_sim = Button(text='slide_\nabove_\nsimple')
+    slide_sim.bind(on_press=lambda j: set_anim_type('slide_above_simple'))
     fade_in_button = Button(text='fade_in')
     fade_in_button.bind(on_press=lambda j: set_anim_type('fade_in'))
-    reveal_button = Button(text='reveal_\nwith_\nanim')
-    reveal_button.bind(on_press=lambda j: set_anim_type('reveal_with_anim'))
-    slide_button = Button(text='reveal_\nsimple')
-    slide_button.bind(on_press=lambda j: set_anim_type('reveal_simple'))
-    modes_layout.add_widget(slide_in_button)
+    reveal_button = Button(text='reveal_\nbelow_\nanim')
+    reveal_button.bind(on_press=
+                       lambda j: set_anim_type('reveal_below_anim'))
+    slide_button = Button(text='reveal_\nbelow_\nsimple')
+    slide_button.bind(on_press=
+                      lambda j: set_anim_type('reveal_below_simple'))
+    modes_layout.add_widget(slide_an)
+    modes_layout.add_widget(slide_sim)
     modes_layout.add_widget(fade_in_button)
     modes_layout.add_widget(reveal_button)
     modes_layout.add_widget(slide_button)
     main_panel.add_widget(modes_layout)
 
-    
     button = Button(text='toggle NavigationDrawer state (animate)',
                     size_hint_y=0.2)
     button.bind(on_press=lambda j: navigationdrawer.toggle_state())
@@ -532,10 +531,7 @@ if __name__ == '__main__':
     main_panel.add_widget(button)
     main_panel.add_widget(button2)
     main_panel.add_widget(button3)
-    
+
     Window.add_widget(navigationdrawer)
 
     runTouchApp()
-        
-
-    
