@@ -295,11 +295,11 @@ class NavigationDrawer(StencilView):
     encouaged to) edit these properties individually, for a vastly
     larger range of possible animations. Defaults to reveal_below_anim.
     '''
-    
+
     def __init__(self, *args):
         super(NavigationDrawer, self).__init__(*args)
         Clock.schedule_once(self.on__main_above, 0)
-        
+
     def on_anim_type(self, *args):
         anim_type = self.anim_type
         if anim_type == 'slide_above_anim':
