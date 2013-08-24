@@ -63,7 +63,8 @@ from kivy.animation import Animation
 from kivy.uix.widget import Widget
 from kivy.uix.stencilview import StencilView
 from kivy.metrics import dp
-from kivy.properties import ObjectProperty, NumericProperty, OptionProperty, BooleanProperty, StringProperty
+from kivy.properties import (ObjectProperty, NumericProperty, OptionProperty,
+                             BooleanProperty, StringProperty)
 
 from kivy.lang import Builder
 
@@ -393,10 +394,10 @@ class NavigationDrawer(StencilView):
     def on_touch_down(self, touch):
         col_self = self.collide_point(*touch.pos)
         col_side = self._side_panel.collide_point(*touch.pos)
-        if (not col_self or
-            (col_side and not self._main_above and self._anim_progress > 0) or
-            # Touch above both main and side, but side on top
-            self._touch is not None):
+        if col_side and not self._main_above and self._anim_progress > 0:
+            self._side_panel.on_touch_down(touch)
+            return
+        if not col_self or self._touch is not None:
             super(NavigationDrawer, self).on_touch_down(touch)
             return 
         if self._anim_progress > 0.001:
@@ -520,9 +521,11 @@ if __name__ == '__main__':
     main_panel.add_widget(modes_layout)
 
     
-    button = Button(text='toggle NavigationDrawer state (animate)', size_hint_y=0.2)
+    button = Button(text='toggle NavigationDrawer state (animate)',
+                    size_hint_y=0.2)
     button.bind(on_press=lambda j: navigationdrawer.toggle_state())
-    button2 = Button(text='toggle NavigationDrawer state (jump)', size_hint_y=0.2)
+    button2 = Button(text='toggle NavigationDrawer state (jump)',
+                     size_hint_y=0.2)
     button2.bind(on_press=lambda j: navigationdrawer.toggle_state(False))
     button3 = Button(text='toggle _main_above', size_hint_y=0.2)
     button3.bind(on_press=navigationdrawer.toggle_main_above)

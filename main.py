@@ -50,17 +50,22 @@ class ExampleApp(App):
         slide_in_button.bind(on_press=lambda j: set_anim_type('slide_in'))
         fade_in_button = Button(text='fade_in')
         fade_in_button.bind(on_press=lambda j: set_anim_type('fade_in'))
-        reveal_button = Button(text='reveal_\nfrom_\nbelow')
-        reveal_button.bind(on_press=lambda j: set_anim_type('reveal_from_below'))
+        reveal_button = Button(text='reveal_\nwith_\nanim')
+        reveal_button.bind(on_press=lambda j: set_anim_type('reveal_with_anim'))
+        slide_button = Button(text='reveal_\nsimple')
+        slide_button.bind(on_press=lambda j: set_anim_type('reveal_simple'))
         modes_layout.add_widget(slide_in_button)
         modes_layout.add_widget(fade_in_button)
         modes_layout.add_widget(reveal_button)
+        modes_layout.add_widget(slide_button)
         main_panel.add_widget(modes_layout)
 
 
-        button = Button(text='toggle NavigationDrawer state (animate)', size_hint_y=0.2)
+        button = Button(text='toggle NavigationDrawer state (animate)',
+                        size_hint_y=0.2)
         button.bind(on_press=lambda j: navigationdrawer.toggle_state())
-        button2 = Button(text='toggle NavigationDrawer state (jump)', size_hint_y=0.2)
+        button2 = Button(text='toggle NavigationDrawer state (jump)',
+                         size_hint_y=0.2)
         button2.bind(on_press=lambda j: navigationdrawer.toggle_state(False))
         button3 = Button(text='toggle _main_above', size_hint_y=0.2)
         button3.bind(on_press=navigationdrawer.toggle_main_above)
