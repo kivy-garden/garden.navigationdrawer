@@ -1,5 +1,4 @@
-NavigationDrawer
-================
+# NavigationDrawer
 
 The NavigationDrawer widget provides a hidden panel view designed to
 duplicate the popular Android layout.  The user views one main widget
@@ -25,8 +24,7 @@ as the side panel, and the second widget as the main panel. No further
 widgets can be added, further changes are left to the user via editing
 the panel widgets.
 
-Usage summary
--------------
+# Usage summary
 
 - The first widget added to a NavigationDrawer is used as the hidden
   side panel.
@@ -42,7 +40,7 @@ Usage summary
 See the example and docstrings for information on individual properties.
 
 
-Example::
+# Example::
 
 class ExampleApp(App):
 
