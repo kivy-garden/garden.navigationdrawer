@@ -29,3 +29,5 @@ Todo
 ----
 
 Improve touch management
+
+Screen edge options

@@ -124,7 +124,8 @@ Builder.load_string('''
 ''')
 
 class NavigationDrawerException(Exception):
-    '''Raised when add_widget or remove_widget called incorrectly on a NavigationDrawer.
+    '''Raised when add_widget or remove_widget called incorrectly on a
+    NavigationDrawer.
 
     '''
 
@@ -149,7 +150,7 @@ class NavigationDrawer(StencilView):
     # Appearance properties
     side_panel_width = NumericProperty()
     '''The width of the hidden side panel. Defaults to the minimum of
-250dp or half the NavigationDrawer width.'''
+    250dp or half the NavigationDrawer width.'''
     separator_image = StringProperty('')
     '''The path to an image that will be placed between the side and main
     panels. If set to `''`, defaults to a gradient from black to
@@ -159,22 +160,24 @@ class NavigationDrawer(StencilView):
     '''The width of the separator image.'''
 
     # Touch properties
-    touch_accept_width = NumericProperty('9dp')
+    touch_accept_width = NumericProperty('14dp')
     '''Distance from the left of the NavigationDrawer in which to grab the
-touch and allow revealing of the hidden panel.'''
+    touch and allow revealing of the hidden panel.'''
     _touch = ObjectProperty(None, allownone=True) # The currently active touch
 
     # Animation properties
     state = OptionProperty('closed',options=('open','closed'))
     '''Specifies the state of the widget. Must be one of 'open' or
-'closed'. Setting its value automatically jumps to the relevant state,
-or users may use the anim_to_state() method to animate the
-transition.'''
+    'closed'. Setting its value automatically jumps to the relevant state,
+    or users may use the anim_to_state() method to animate the
+    transition.'''
     anim_time = NumericProperty(0.3)
     '''The time taken for the panel to slide to the open/closed state when
-released or manually animated with anim_to_state.'''
+    released or manually animated with anim_to_state.'''
     min_dist_to_open = NumericProperty(0.7)
-    '''Must be between 0 and 1. Specifies the fraction of the hidden panel width beyond which the NavigationDrawer will relax to open state when released. Defaults to 0.7.'''
+    '''Must be between 0 and 1. Specifies the fraction of the hidden panel
+    width beyond which the NavigationDrawer will relax to open state when
+    released. Defaults to 0.7.'''
     _anim_progress = NumericProperty(0) # Internal state controlling
                                         # widget positions
     _anim_init_progress = NumericProperty(0) # Keeps track of where the main
@@ -188,8 +191,8 @@ released or manually animated with anim_to_state.'''
 
     side_panel_init_offset = NumericProperty(0.5)
     '''Intial offset (to the left of the widget) of the side panel, in
-units of its total width. Opening the panel moves it smoothly to its
-final position at the left of the screen.'''
+    units of its total width. Opening the panel moves it smoothly to its
+    final position at the left of the screen.'''
 
     side_panel_darkness = NumericProperty(0.8)
     '''Controls the fade-to-black of the side panel in its hidden
@@ -201,8 +204,8 @@ final position at the left of the screen.'''
     between 0 (fade to transparent) and 1 (no transparency)'''
 
     main_panel_final_offset = NumericProperty(1)
-    '''Final offset (to the right of the normal position) of the main panel, in units of the side panel width.'''
-    # Final offset for main panel as a fraction of root.side_panel_width
+    '''Final offset (to the right of the normal position) of the main
+    panel, in units of the side panel width.'''
 
     main_panel_darkness = NumericProperty(0)
     '''Controls the fade-to-black of the main panel when the side panel is
@@ -213,14 +216,14 @@ final position at the left of the screen.'''
     anim_type = OptionProperty('reveal_from_below',
                                options=['slide_in',
                                         'fade_in',
-                                        'reveal_from_below',
+                                        'reveal_with_anim',
+                                        'reveal_simple',
                                         ])
     '''The default animation type to use. Several options are available,
     modifying all possibly animation properties including darkness,
     opacity, movement and draw height. Users may also (and are
     encouaged to) edit these properties individually, for a vastly
-    larger range of possible animations.
-
+    larger range of possible animations. Defaults to reveal_with_anim.
     '''
 
     def on_anim_type(self, *args):
@@ -239,13 +242,21 @@ final position at the left of the screen.'''
             self.main_panel_final_offset = 0
             self.main_panel_darkness = 0
             self.side_panel_init_offset = 0.5
-        elif anim_type == 'reveal_from_below':
+        elif anim_type == 'reveal_with_anim':
             self.top_panel = 'main'
             self.side_panel_darkness = 0.8
             self.side_panel_opacity = 1
             self.main_panel_final_offset = 1
             self.main_panel_darkness = 0
             self.side_panel_init_offset = 0.5
+        elif anim_type == 'reveal_simple':
+            self.top_panel = 'main'
+            self.side_panel_darkness = 0
+            self.side_panel_opacity = 1
+            self.main_panel_final_offset = 1
+            self.main_panel_darkness = 0
+            self.side_panel_init_offset = 0
+            
     
     def on_top_panel(self, *args):
         if self.top_panel == 'main':
@@ -412,7 +423,8 @@ final position at the left of the screen.'''
     def on_touch_move(self, touch):
         if touch is self._touch:
             dx = touch.x - touch.ox
-            self._anim_progress = max(0,min(self._anim_init_progress + (dx / self.side_panel_width),1))
+            self._anim_progress = max(0,min(self._anim_init_progress +
+                                            (dx / self.side_panel_width),1))
             if self._anim_progress < 0.975:
                 touch.ud['panels_jiggled'] = True
         else:
@@ -497,11 +509,14 @@ if __name__ == '__main__':
     slide_in_button.bind(on_press=lambda j: set_anim_type('slide_in'))
     fade_in_button = Button(text='fade_in')
     fade_in_button.bind(on_press=lambda j: set_anim_type('fade_in'))
-    reveal_button = Button(text='reveal_\nfrom_\nbelow')
-    reveal_button.bind(on_press=lambda j: set_anim_type('reveal_from_below'))
+    reveal_button = Button(text='reveal_\nwith_\nanim')
+    reveal_button.bind(on_press=lambda j: set_anim_type('reveal_with_anim'))
+    slide_button = Button(text='reveal_\nsimple')
+    slide_button.bind(on_press=lambda j: set_anim_type('reveal_simple'))
     modes_layout.add_widget(slide_in_button)
     modes_layout.add_widget(fade_in_button)
     modes_layout.add_widget(reveal_button)
+    modes_layout.add_widget(slide_button)
     main_panel.add_widget(modes_layout)
 
     
