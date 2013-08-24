@@ -72,8 +72,6 @@ class ExampleApp(App):
         main_panel.add_widget(Widget(size_hint_y=None, height=dp(10)))
         main_panel.add_widget(label_bl)
         main_panel.add_widget(Widget(size_hint_y=None, height=dp(10)))
-        main_panel.add_widget(Image(source='red_pixel.png', allow_stretch=True,
-                                    keep_ratio=False, size_hint_y=0.2))
         navigationdrawer.add_widget(main_panel)
         label.bind(size=label.setter('text_size'))
 
@@ -578,8 +576,6 @@ if __name__ == '__main__':
     main_panel.add_widget(Widget(size_hint_y=None, height=dp(10)))
     main_panel.add_widget(label_bl)
     main_panel.add_widget(Widget(size_hint_y=None, height=dp(10)))
-    main_panel.add_widget(Image(source='red_pixel.png', allow_stretch=True,
-                                keep_ratio=False, size_hint_y=0.2))
     navigationdrawer.add_widget(main_panel)
     label.bind(size=label.setter('text_size'))
 
