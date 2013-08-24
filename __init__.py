@@ -122,6 +122,7 @@ from kivy.animation import Animation
 from kivy.uix.widget import Widget
 from kivy.uix.stencilview import StencilView
 from kivy.metrics import dp
+from kivy.clock import Clock
 from kivy.properties import (ObjectProperty, NumericProperty, OptionProperty,
                              BooleanProperty, StringProperty)
 
@@ -294,7 +295,11 @@ class NavigationDrawer(StencilView):
     encouaged to) edit these properties individually, for a vastly
     larger range of possible animations. Defaults to reveal_below_anim.
     '''
-
+    
+    def __init__(self, *args):
+        super(NavigationDrawer, self).__init__(*args)
+        Clock.schedule_once(self.on__main_above,0)
+        
     def on_anim_type(self, *args):
         anim_type = self.anim_type
         if anim_type == 'slide_above_anim':
@@ -340,18 +345,17 @@ class NavigationDrawer(StencilView):
             self._main_above = False
 
     def on__main_above(self, *args):
-        if self.main_panel is not None or self.side_panel is not None:
-            newval = self._main_above
-            main_panel = self._main_panel
-            side_panel = self._side_panel
-            self.canvas.remove(main_panel.canvas)
-            self.canvas.remove(side_panel.canvas)
-            if newval:
-                self.canvas.insert(0, main_panel.canvas)
-                self.canvas.insert(0, side_panel.canvas)
-            else:
-                self.canvas.insert(0, side_panel.canvas)
-                self.canvas.insert(0, main_panel.canvas)
+        newval = self._main_above
+        main_panel = self._main_panel
+        side_panel = self._side_panel
+        self.canvas.remove(main_panel.canvas)
+        self.canvas.remove(side_panel.canvas)
+        if newval:
+            self.canvas.insert(0, main_panel.canvas)
+            self.canvas.insert(0, side_panel.canvas)
+        else:
+            self.canvas.insert(0, side_panel.canvas)
+            self.canvas.insert(0, main_panel.canvas)
 
     def toggle_main_above(self, *args):
         if self._main_above:
