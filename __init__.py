@@ -298,7 +298,7 @@ class NavigationDrawer(StencilView):
     
     def __init__(self, *args):
         super(NavigationDrawer, self).__init__(*args)
-        Clock.schedule_once(self.on__main_above,0)
+        Clock.schedule_once(self.on__main_above, 0)
         
     def on_anim_type(self, *args):
         anim_type = self.anim_type
