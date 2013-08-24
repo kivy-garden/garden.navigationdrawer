@@ -228,7 +228,7 @@ class NavigationDrawer(StencilView):
     transparent in an appropriate direction (left->right if side panel
     above main, right->left if main panel on top).'''
     separator_image_width = NumericProperty(dp(10))
-    '''The width of the separator image.'''
+    '''The width of the separator image. Defaults to 10dp'''
 
     # Touch properties
     touch_accept_width = NumericProperty('14dp')
