@@ -493,23 +493,34 @@ class NavigationDrawer(StencilView):
     def on_touch_down(self, touch):
         col_self = self.collide_point(*touch.pos)
         col_side = self._side_panel.collide_point(*touch.pos)
-        if col_side and not self._main_above and self._anim_progress > 0:
-            self._side_panel.on_touch_down(touch)
-            return
-        if not col_self or self._touch is not None:
-            super(NavigationDrawer, self).on_touch_down(touch)
-            return
-        if self._anim_progress > 0.001:
-            valid_region = (self._main_panel.x <=
-                            touch.x <=
-                            (self._main_panel.x + self._main_panel.width))
-        else:
+        col_main = self._main_panel.collide_point(*touch.pos)
+
+        if self._anim_progress < 0.001:  # i.e. closed
             valid_region = (self.x <=
                             touch.x <=
                             (self.x + self.touch_accept_width))
-        if not valid_region:
-            super(NavigationDrawer, self).on_touch_down(touch)
-            return False
+            if not valid_region:
+                self._main_panel.on_touch_down(touch)
+                return False
+        else:
+            if col_side and not self._main_above:
+                self._side_panel.on_touch_down(touch)
+                return False
+            valid_region = (self._main_panel.x <=
+                            touch.x <=
+                            (self._main_panel.x + self._main_panel.width))
+            if not valid_region:
+                if self._main_above:
+                    if col_main:
+                        self._main_panel.on_touch_down(touch)
+                    elif col_side:
+                        self._side_panel.on_touch_down(touch)
+                else:
+                    if col_side:
+                        self._side_panel.on_touch_down(touch)
+                    elif col_main:
+                        self._main_panel.on_touch_down(touch)
+                return False
         Animation.cancel_all(self)
         self._anim_init_progress = self._anim_progress
         self._touch = touch
@@ -573,6 +584,7 @@ if __name__ == '__main__':
     from kivy.uix.boxlayout import BoxLayout
     from kivy.uix.label import Label
     from kivy.uix.button import Button
+    from kivy.uix.popup import Popup
     from kivy.uix.image import Image
     from kivy.core.window import Window
 
@@ -580,8 +592,14 @@ if __name__ == '__main__':
 
     side_panel = BoxLayout(orientation='vertical')
     side_panel.add_widget(Label(text='Panel label'))
-    side_panel.add_widget(Button(text='A button'))
-    side_panel.add_widget(Button(text='Another button'))
+    popup = Popup(title='Sidebar popup',
+                  content=Label(
+                      text='You clicked the sidebar\npopup button'),
+                  size_hint=(0.7, 0.7))
+    first_button = Button(text='Popup\nbutton')
+    first_button.bind(on_release=popup.open)
+    side_panel.add_widget(first_button)
+    side_panel.add_widget(Button(text='Another\nbutton'))
     navigationdrawer.add_widget(side_panel)
 
     label_head = (
