@@ -302,6 +302,14 @@ class NavigationDrawer(StencilView):
     totally black).
     '''
 
+    opening_transition = StringProperty('out_cubic')
+    '''The name of the animation transition type to use when animating to
+    an open state. Defaults to 'out_cubic'.'''
+
+    closing_transition = StringProperty('in_cubic')
+    '''The name of the animation transition type to use when animating to
+    a closed state. Defaults to 'out_cubic'.'''
+
     anim_type = OptionProperty('reveal_from_below',
                                options=['slide_above_anim',
                                         'slide_above_simple',
@@ -465,12 +473,12 @@ class NavigationDrawer(StencilView):
         if state == 'open':
             anim = Animation(_anim_progress=1,
                              duration=self.anim_time,
-                             t='out_cubic')
+                             t=self.closing_transition)
             anim.start(self)
         elif state == 'closed':
             anim = Animation(_anim_progress=0,
                              duration=self.anim_time,
-                             t='out_cubic')
+                             t=self.opening_transition)
             anim.start(self)
         else:
             raise NavigationDrawerException(
@@ -624,6 +632,11 @@ if __name__ == '__main__':
 
     def set_anim_type(name):
         navigationdrawer.anim_type = name
+
+    def set_transition(name):
+        navigationdrawer.opening_transition = name
+        navigationdrawer.closing_transition = name
+
     modes_layout = BoxLayout(orientation='horizontal')
     modes_layout.add_widget(Label(text='preset\nanims:'))
     slide_an = Button(text='slide_\nabove_\nanim')
@@ -644,6 +657,26 @@ if __name__ == '__main__':
     modes_layout.add_widget(reveal_button)
     modes_layout.add_widget(slide_button)
     main_panel.add_widget(modes_layout)
+
+    transitions_layout = BoxLayout(orientation='horizontal')
+    transitions_layout.add_widget(Label(text='anim\ntransitions'))
+    out_cubic = Button(text='out_cubic')
+    out_cubic.bind(on_press=
+                   lambda j: set_transition('out_cubic'))
+    in_quint = Button(text='in_quint')
+    in_quint.bind(on_press=
+                  lambda j: set_transition('in_quint'))
+    linear = Button(text='linear')
+    linear.bind(on_press=
+                lambda j: set_transition('linear'))
+    out_sine = Button(text='out_sine')
+    out_sine.bind(on_press=
+                  lambda j: set_transition('out_sine'))
+    transitions_layout.add_widget(out_cubic)
+    transitions_layout.add_widget(in_quint)
+    transitions_layout.add_widget(linear)
+    transitions_layout.add_widget(out_sine)
+    main_panel.add_widget(transitions_layout)
 
     button = Button(text='toggle NavigationDrawer state (animate)',
                     size_hint_y=0.2)
