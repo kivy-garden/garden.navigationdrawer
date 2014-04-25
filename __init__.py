@@ -324,8 +324,8 @@ class NavigationDrawer(StencilView):
     larger range of possible animations. Defaults to reveal_below_anim.
     '''
 
-    def __init__(self, *args):
-        super(NavigationDrawer, self).__init__(*args)
+    def __init__(self, **kwargs):
+        super(NavigationDrawer, self).__init__(**kwargs)
         Clock.schedule_once(self.on__main_above, 0)
 
     def on_anim_type(self, *args):
