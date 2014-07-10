@@ -544,15 +544,10 @@ class NavigationDrawer(StencilView):
                 edge += self.height
                 d = -1
         if self._anim_progress < 0.001:  # i.e. closed
-
             if pan_pos in ['top', 'right']:
-                valid_region = (edge >=
-                                pt >=
-                                (edge + d * self.touch_accept_width))
+                valid_region = (edge >= pt >= (edge + d * self.touch_accept_width))
             else:
-                valid_region = (edge <=
-                                pt <=
-                                (edge + d * self.touch_accept_width))
+                valid_region = (edge <= pt <= (edge + d * self.touch_accept_width))
             if not valid_region:
                 self._main_panel.on_touch_down(touch)
                 return False
@@ -560,9 +555,12 @@ class NavigationDrawer(StencilView):
             if col_side and not self._main_above:
                 self._side_panel.on_touch_down(touch)
                 return False
-            valid_region = (self._main_panel.x <=
-                            touch.x <=
-                            (self._main_panel.x + self._main_panel.width))
+            if pan_pos in ['left', 'right']:
+                s = self._main_panel.x, self._main_panel.x + self._main_panel.width
+            else:
+                s = self._main_panel.y, self._main_panel.y + self._main_panel.height
+
+            valid_region = (s[0] <= pt <= s[1])
             if not valid_region:
                 if self._main_above:
                     if col_main:
