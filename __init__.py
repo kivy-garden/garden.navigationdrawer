@@ -355,6 +355,18 @@ class NavigationDrawer(StencilView):
         super(NavigationDrawer, self).__init__(**kwargs)
         Clock.schedule_once(self.on__main_above, 0)
 
+    def on_side_panel_positioning(self, *args):
+        spp = self.side_panel_positioning.lower()
+        if spp == 'bot':
+            spp = 'bottom'
+        if spp in ['left', 'right', 'top', 'bottom']:
+            self.side_panel_positioning = spp
+        else:
+            raise AttributeError("Property side_panel_positioning accepts only 'left', 'right', 'top', 'bottom'")
+
+
+
+
     def on_anim_type(self, *args):
         anim_type = self.anim_type
         if anim_type == 'slide_above_anim':
