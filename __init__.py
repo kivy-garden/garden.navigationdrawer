@@ -219,8 +219,8 @@ Builder.load_string('''
         _h: root.height if root.side_panel_positioning == 'top' else 0
         width: root.separator_image_width
         height: root._side_panel.height if root.side_panel_positioning in ['left', 'right'] else root._side_panel.width
-        x: mainpanel.x + self._w if root.side_panel_positioning in ['left', 'right'] else \
-           root.center_x - self.width / 2.
+        center_x: sidepanel.center_x + root._anim_direction * (sidepanel.width - self.width) / 2. if root.side_panel_positioning in ['left', 'right'] else \
+           root.center_x
         y: self._h + mainpanel.y - self.height / 2. if root.side_panel_positioning in ['bottom', 'top'] else \
            0
         allow_stretch: True
@@ -228,7 +228,7 @@ Builder.load_string('''
         canvas.before:
             PushMatrix
             Rotate:
-                angle: 90 if root.side_panel_positioning in ['bottom', 'top'] else 0
+                angle: 90 * ['left', 'top', 'right', 'bottom'].index(root.side_panel_positioning) #self._r if root.side_panel_positioning in ['bottom', 'top'] else 0
                 origin: self.center
         canvas:
             PopMatrix
