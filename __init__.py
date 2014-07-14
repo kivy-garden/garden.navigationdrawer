@@ -219,17 +219,37 @@ Builder.load_string('''
         _h: root.height if root.side_panel_positioning == 'top' else 0
         width: root.separator_image_width
         height: root._side_panel.height if root.side_panel_positioning in ['left', 'right'] else root._side_panel.width
-        center_x: sidepanel.center_x + root._anim_direction * (sidepanel.width - self.width) / 2. if root.side_panel_positioning in ['left', 'right'] else \
-           root.center_x
-        y: self._h + mainpanel.y - self.height / 2. if root.side_panel_positioning in ['bottom', 'top'] else \
-           0
+        _left_x: (mainpanel.x - self.width + 1) if root._main_above \
+            else (sidepanel.right - 1)
+        _right_x: (mainpanel.right - self.width - 1 ) if root._main_above \
+            else (sidepanel.x - 2 * self.width)
+
+        _top_y: (mainpanel.top + self.width / 2.) if root._main_above \
+            else (sidepanel.y - self.width / 2.)
+
+        _bottom_y: (mainpanel.y - self.width / 2.) if root._main_above \
+            else (sidepanel.top + self.width / 2.)
+        x: self._left_x if root.side_panel_positioning == 'left' else self._right_x \
+                if root.side_panel_positioning in ['left', 'right'] else root.center_x - self.width / 2.
+        y: self._top_y if root.side_panel_positioning == 'top' else self._bottom_y \
+                if root.side_panel_positioning in ['bottom', 'top'] else root.y
         allow_stretch: True
         keep_ratio: False
         canvas.before:
             PushMatrix
             Rotate:
-                angle: 90 * ['left', 'top', 'right', 'bottom'].index(root.side_panel_positioning) #self._r if root.side_panel_positioning in ['bottom', 'top'] else 0
+                angle: 90 * ['left', 'bottom', 'right', 'top'].index(root.side_panel_positioning) #self._r \
+                        if root.side_panel_positioning in ['bottom', 'top'] else 0
                 origin: self.center
+            # Translate to center the width of the image
+            Translate:
+                x: -self.width if root.side_panel_positioning == 'right' else 0
+                y: self.width if root.side_panel_positioning == 'right' else 0
+            # Translate to compensate for the rotation
+            Translate:
+                x: self.height / 2. if root.side_panel_positioning == 'top' else -self.height / 2. \
+                    if root.side_panel_positioning in ['bottom', 'top'] else 0
+
         canvas:
             PopMatrix
 
@@ -363,9 +383,6 @@ class NavigationDrawer(StencilView):
             self.side_panel_positioning = spp
         else:
             raise AttributeError("Property side_panel_positioning accepts only 'left', 'right', 'top', 'bottom'")
-
-
-
 
     def on_anim_type(self, *args):
         anim_type = self.anim_type
@@ -658,7 +675,7 @@ if __name__ == '__main__':
     navigationdrawer = NavigationDrawer()
 
     side_panel = BoxLayout(orientation='vertical')
-    side_panel.add_widget(Label(text='Panel label'))
+    side_panel.add_widget(Button(text='Panel label'))
     popup = Popup(title='Sidebar popup',
                   content=Label(
                       text='You clicked the sidebar\npopup button'),
@@ -697,13 +714,18 @@ if __name__ == '__main__':
         navigationdrawer.closing_transition = name
 
     def change_side(*args):
-        options = ['left', 'top', 'right']
+        options = ['left', 'top', 'right', 'bottom']
         i = options.index(navigationdrawer.side_panel_positioning)
         i += 1
-        if i > 2:
+        if i > 3:
             i = 0
         navigationdrawer.side_panel_positioning = options[i]
         button4.text = options[i].capitalize()
+
+    def toggle_main_above(*args):
+        navigationdrawer.toggle_main_above()
+        button3.text = 'Main above: {0}'.format(navigationdrawer._main_above)
+
 
     modes_layout = BoxLayout(orientation='horizontal')
     modes_layout.add_widget(Label(text='preset\nanims:'))
@@ -753,13 +775,14 @@ if __name__ == '__main__':
                      size_hint_y=0.2)
     button2.bind(on_press=lambda j: navigationdrawer.toggle_state(False))
     button3 = Button(text='toggle _main_above', size_hint_y=0.2)
-    button3.bind(on_press=navigationdrawer.toggle_main_above)
+    button3.bind(on_press=toggle_main_above)
     button4 = Button(text='Panel Side: Left', size_hint_y=0.2)
     button4.bind(on_press=change_side)
     main_panel.add_widget(button)
     main_panel.add_widget(button2)
     main_panel.add_widget(button3)
     main_panel.add_widget(button4)
+    main_panel.add_widget(Label(size_hint_y=0.05))
 
     Window.add_widget(navigationdrawer)
 
