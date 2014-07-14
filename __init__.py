@@ -774,7 +774,7 @@ if __name__ == '__main__':
     button2 = Button(text='toggle NavigationDrawer state (jump)',
                      size_hint_y=0.2)
     button2.bind(on_press=lambda j: navigationdrawer.toggle_state(False))
-    button3 = Button(text='toggle _main_above', size_hint_y=0.2)
+    button3 = Button(text='toggle _main_above: {}'.format(navigationdrawer._main_above), size_hint_y=0.2)
     button3.bind(on_press=toggle_main_above)
     button4 = Button(text='Panel Side: Left', size_hint_y=0.2)
     button4.bind(on_press=change_side)
