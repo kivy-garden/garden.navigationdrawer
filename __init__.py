@@ -220,7 +220,7 @@ Builder.load_string('''
         width: root.separator_image_width
         height: root._side_panel.height if root.side_panel_positioning in ['left', 'right'] else root._side_panel.width
         x: mainpanel.x + self._w if root.side_panel_positioning in ['left', 'right'] else \
-           root.center_x
+           root.center_x - self.width / 2.
         y: self._h + mainpanel.y - self.height / 2. if root.side_panel_positioning in ['bottom', 'top'] else \
            0
         allow_stretch: True
