@@ -154,7 +154,8 @@ Builder.load_string('''
     _side_panel: sidepanel
     _main_panel: mainpanel
     _join_image: joinimage
-    side_panel_width: min(dp(250), 0.5*self.width)
+    side_panel_width: min(dp(250), 0.5 * self.width) if root.side_panel_positioning in ['left', 'right'] else \
+                        min(dp(250), 0.5 * self.height)
     _anim_direction: -1 if root.side_panel_positioning in ['top', 'right'] else 1
     _side_panel_offset_x: root.width - sidepanel.width if root.side_panel_positioning == 'right' else 0
     _side_panel_offset_y: root.height - sidepanel.height if root.side_panel_positioning == 'top' else 0
