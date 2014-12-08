@@ -145,8 +145,11 @@ from kivy.metrics import dp
 from kivy.clock import Clock
 from kivy.properties import (ObjectProperty, NumericProperty, OptionProperty,
                              BooleanProperty, StringProperty)
-
+from kivy.resources import resource_add_path
 from kivy.lang import Builder
+import os.path
+
+resource_add_path(os.path.dirname(__file__))
 
 Builder.load_string('''
 <NavigationDrawer>:
