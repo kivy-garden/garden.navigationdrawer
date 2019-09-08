@@ -157,15 +157,25 @@ Builder.load_string('''
     _side_panel: sidepanel
     _main_panel: mainpanel
     _join_image: joinimage
-    side_panel_width: min(dp(250), 0.5*self.width)
+    side_panel_width: min(dp(250), 0.5 * self.width) if root.side_panel_positioning in ['left', 'right'] else \
+                        min(dp(250), 0.5 * self.height)
+    _anim_direction: -1 if root.side_panel_positioning in ['top', 'right'] else 1
+    _side_panel_offset_x: root.width - sidepanel.width if root.side_panel_positioning == 'right' else 0
+    _side_panel_offset_y: root.height - sidepanel.height if root.side_panel_positioning == 'top' else 0
+
     BoxLayout:
         id: sidepanel
-        y: root.y
-        x: root.x - \
-           (1-root._anim_progress)* \
-           root.side_panel_init_offset*root.side_panel_width
-        height: root.height
-        width: root.side_panel_width
+        y: root.y + root._side_panel_offset_y - root._anim_direction * (1-root._anim_progress)* \
+           root.side_panel_init_offset*root.side_panel_width if root.side_panel_positioning in ['bottom', 'top'] \
+           else root.y
+
+        x: root.x + root._side_panel_offset_x - root._anim_direction * (1-root._anim_progress)* \
+           root.side_panel_init_offset*root.side_panel_width  if root.side_panel_positioning in ['right', 'left'] else \
+           root.x
+        opacity: root.side_panel_opacity + \
+                 (1-root.side_panel_opacity)*root._anim_progress
+        height: root.height if root.side_panel_positioning in ['right', 'left'] else root.side_panel_width
+        width: root.side_panel_width if root.side_panel_positioning in ['right', 'left'] else root.width
         opacity: root.side_panel_opacity + \
                  (1-root.side_panel_opacity)*root._anim_progress
         canvas:
@@ -182,11 +192,14 @@ Builder.load_string('''
                 pos: self.pos
     BoxLayout:
         id: mainpanel
-        x: root.x + \
-           root._anim_progress * \
-           root.side_panel_width * \
-           root.main_panel_final_offset
-        y: root.y
+        x: root.x + root._anim_direction *\
+        root._anim_progress * \
+        root.side_panel_width * \
+        root.main_panel_final_offset if root.side_panel_positioning in ['right', 'left'] else root.x
+        y: root.y + root._anim_direction * root._anim_progress * \
+           root.side_panel_width *  root.main_panel_final_offset if root.side_panel_positioning in ['bottom', 'top'] \
+           else root.y
+
         size: root.size
         canvas:
             Color:
@@ -206,13 +219,44 @@ Builder.load_string('''
                  else min(root._anim_progress*40,1))
         source: root._choose_image(root._main_above, root.separator_image)
         mipmap: False
+        _w: root.width if root.side_panel_positioning == 'right' else 0
+        _h: root.height if root.side_panel_positioning == 'top' else 0
         width: root.separator_image_width
-        height: root._side_panel.height
-        x: (mainpanel.x - self.width + 1) if root._main_above \
-           else (sidepanel.x + sidepanel.width - 1)
-        y: root.y
+        height: root._side_panel.height if root.side_panel_positioning in ['left', 'right'] else root._side_panel.width
+        _left_x: (mainpanel.x - self.width + 1) if root._main_above \
+            else (sidepanel.right - 1)
+        _right_x: (mainpanel.right - self.width - 1 ) if root._main_above \
+            else (sidepanel.x - 2 * self.width)
+
+        _top_y: (mainpanel.top + self.width / 2.) if root._main_above \
+            else (sidepanel.y - self.width / 2.)
+
+        _bottom_y: (mainpanel.y - self.width / 2.) if root._main_above \
+            else (sidepanel.top + self.width / 2.)
+        x: self._left_x if root.side_panel_positioning == 'left' else self._right_x \
+                if root.side_panel_positioning in ['left', 'right'] else root.center_x - self.width / 2.
+        y: self._top_y if root.side_panel_positioning == 'top' else self._bottom_y \
+                if root.side_panel_positioning in ['bottom', 'top'] else root.y
         allow_stretch: True
         keep_ratio: False
+        canvas.before:
+            PushMatrix
+            Rotate:
+                angle: 90 * ['left', 'bottom', 'right', 'top'].index(root.side_panel_positioning) #self._r \
+                        if root.side_panel_positioning in ['bottom', 'top'] else 0
+                origin: self.center
+            # Translate to center the width of the image
+            Translate:
+                x: -self.width if root.side_panel_positioning == 'right' else 0
+                y: self.width if root.side_panel_positioning == 'right' else 0
+            # Translate to compensate for the rotation
+            Translate:
+                x: self.height / 2. if root.side_panel_positioning == 'top' else -self.height / 2. \
+                    if root.side_panel_positioning in ['bottom', 'top'] else 0
+
+        canvas:
+            PopMatrix
+
 ''')
 
 
@@ -295,6 +339,10 @@ class NavigationDrawer(StencilView):
     '''Controls the opacity of the side panel in its hidden state. Must be
     between 0 (fade to transparent) and 1 (no transparency)'''
 
+    side_panel_positioning = StringProperty('left')
+    '''Controlls the screen edge in which the side panel is pulled from.
+    Must be either 'left', 'right', 'top' or 'bottom' '''
+
     main_panel_final_offset = NumericProperty(1)
     '''Final offset (to the right of the normal position) of the main
     panel, in units of the side panel width.'''
@@ -330,6 +378,15 @@ class NavigationDrawer(StencilView):
     def __init__(self, **kwargs):
         super(NavigationDrawer, self).__init__(**kwargs)
         Clock.schedule_once(self.on__main_above, 0)
+
+    def on_side_panel_positioning(self, *args):
+        spp = self.side_panel_positioning.lower()
+        if spp == 'bot':
+            spp = 'bottom'
+        if spp in ['left', 'right', 'top', 'bottom']:
+            self.side_panel_positioning = spp
+        else:
+            raise AttributeError("Property side_panel_positioning accepts only 'left', 'right', 'top', 'bottom'")
 
     def on_anim_type(self, *args):
         anim_type = self.anim_type
@@ -505,11 +562,25 @@ class NavigationDrawer(StencilView):
         col_self = self.collide_point(*touch.pos)
         col_side = self._side_panel.collide_point(*touch.pos)
         col_main = self._main_panel.collide_point(*touch.pos)
-
+        pan_pos = self.side_panel_positioning
+        d = 1
+        if pan_pos in ['left', 'right']:
+            edge = self.x
+            pt = touch.x
+            if pan_pos == 'right':
+                edge += self.width
+                d = -1
+        else:
+            pt = touch.y
+            edge = self.y
+            if pan_pos == 'top':
+                edge += self.height
+                d = -1
         if self._anim_progress < 0.001:  # i.e. closed
-            valid_region = (self.x <=
-                            touch.x <=
-                            (self.x + self.touch_accept_width))
+            if pan_pos in ['top', 'right']:
+                valid_region = (edge >= pt >= (edge + d * self.touch_accept_width))
+            else:
+                valid_region = (edge <= pt <= (edge + d * self.touch_accept_width))
             if not valid_region:
                 self._main_panel.on_touch_down(touch)
                 return False
@@ -517,9 +588,12 @@ class NavigationDrawer(StencilView):
             if col_side and not self._main_above:
                 self._side_panel.on_touch_down(touch)
                 return False
-            valid_region = (self._main_panel.x <=
-                            touch.x <=
-                            (self._main_panel.x + self._main_panel.width))
+            if pan_pos in ['left', 'right']:
+                s = self._main_panel.x, self._main_panel.x + self._main_panel.width
+            else:
+                s = self._main_panel.y, self._main_panel.y + self._main_panel.height
+
+            valid_region = (s[0] <= pt <= s[1])
             if not valid_region:
                 if self._main_above:
                     if col_main:
@@ -544,9 +618,12 @@ class NavigationDrawer(StencilView):
 
     def on_touch_move(self, touch):
         if touch is self._touch:
-            dx = touch.x - touch.ox
+            pan_pos = self.side_panel_positioning
+            di = touch.x - touch.ox if pan_pos in ['left', 'right'] else touch.y - touch.oy
+            if pan_pos in ['right', 'top']:
+               di *= -1
             self._anim_progress = max(0, min(self._anim_init_progress +
-                                            (dx / self.side_panel_width), 1))
+                                            (di / self.side_panel_width), 1))
             if self._anim_progress < 0.975:
                 touch.ud['panels_jiggled'] = True
         else:
@@ -602,7 +679,7 @@ if __name__ == '__main__':
     navigationdrawer = NavigationDrawer()
 
     side_panel = BoxLayout(orientation='vertical')
-    side_panel.add_widget(Label(text='Panel label'))
+    side_panel.add_widget(Button(text='Panel label'))
     popup = Popup(title='Sidebar popup',
                   content=Label(
                       text='You clicked the sidebar\npopup button'),
@@ -639,6 +716,20 @@ if __name__ == '__main__':
     def set_transition(name):
         navigationdrawer.opening_transition = name
         navigationdrawer.closing_transition = name
+
+    def change_side(*args):
+        options = ['left', 'top', 'right', 'bottom']
+        i = options.index(navigationdrawer.side_panel_positioning)
+        i += 1
+        if i > 3:
+            i = 0
+        navigationdrawer.side_panel_positioning = options[i]
+        button4.text = options[i].capitalize()
+
+    def toggle_main_above(*args):
+        navigationdrawer.toggle_main_above()
+        button3.text = 'Main above: {0}'.format(navigationdrawer._main_above)
+
 
     modes_layout = BoxLayout(orientation='horizontal')
     modes_layout.add_widget(Label(text='preset\nanims:'))
@@ -687,11 +778,15 @@ if __name__ == '__main__':
     button2 = Button(text='toggle NavigationDrawer state (jump)',
                      size_hint_y=0.2)
     button2.bind(on_press=lambda j: navigationdrawer.toggle_state(False))
-    button3 = Button(text='toggle _main_above', size_hint_y=0.2)
-    button3.bind(on_press=navigationdrawer.toggle_main_above)
+    button3 = Button(text='toggle _main_above: {}'.format(navigationdrawer._main_above), size_hint_y=0.2)
+    button3.bind(on_press=toggle_main_above)
+    button4 = Button(text='Panel Side: Left', size_hint_y=0.2)
+    button4.bind(on_press=change_side)
     main_panel.add_widget(button)
     main_panel.add_widget(button2)
     main_panel.add_widget(button3)
+    main_panel.add_widget(button4)
+    main_panel.add_widget(Label(size_hint_y=0.05))
 
     Window.add_widget(navigationdrawer)
 
