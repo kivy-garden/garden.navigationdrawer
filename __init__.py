@@ -164,7 +164,7 @@ Builder.load_string('''
         x: root.x - \
            (1-root._anim_progress)* \
            root.side_panel_init_offset*root.side_panel_width
-        height: root.height
+        height: root.side_panel_height if root.side_panel_height else root.height 
         width: root.side_panel_width
         opacity: root.side_panel_opacity + \
                  (1-root.side_panel_opacity)*root._anim_progress
@@ -244,6 +244,9 @@ class NavigationDrawer(StencilView):
     side_panel_width = NumericProperty()
     '''The width of the hidden side panel. Defaults to the minimum of
     250dp or half the NavigationDrawer width.'''
+    side_panel_height = NumericProperty(0)
+    '''The height of the hidden side panel. Defaults to the
+    NavigationDrawer height, unless explicitly set by the user.'''
     separator_image = StringProperty('')
     '''The path to an image that will be placed between the side and main
     panels. If set to `''`, defaults to a gradient from black to
@@ -612,6 +615,8 @@ if __name__ == '__main__':
     side_panel.add_widget(first_button)
     side_panel.add_widget(Button(text='Another\nbutton'))
     navigationdrawer.add_widget(side_panel)
+    navigationdrawer.side_panel_height = 400    # let the user choose the height of the side panel
+                                                # If he doesn't choose, it defaults to the full height
 
     label_head = (
         '[b]Example label filling main panel[/b]\n\n[color=ff0000](p'
