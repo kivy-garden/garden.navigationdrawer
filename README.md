@@ -44,7 +44,7 @@ See the example and docstrings for information on individual properties.
 pip install kivy-garden.navigationdrawer
 ```
 
-# Example::
+# Example
 
     from kivy.app import App
     from kivy.base import runTouchApp
