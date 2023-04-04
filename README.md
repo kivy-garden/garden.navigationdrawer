@@ -39,6 +39,10 @@ the panel widgets.
 
 See the example and docstrings for information on individual properties.
 
+# Install
+```sh
+pip install kivy_garden.filebrowser
+```
 
 # Example::
 
