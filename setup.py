@@ -16,7 +16,7 @@ __version__ = locals['__version__']
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
-URL = 'https://github.com/vbaldereschi/navigationdrawer'
+URL = 'https://github.com/Tungsteno74/navigationdrawer'
 
 setup(
     name='kivy_garden.navigationdrawer',
