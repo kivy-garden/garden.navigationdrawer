@@ -39,8 +39,12 @@ the panel widgets.
 
 See the example and docstrings for information on individual properties.
 
+# Install
+```sh
+pip install kivy-garden.navigationdrawer
+```
 
-# Example::
+# Example
 
     from kivy.app import App
     from kivy.base import runTouchApp
