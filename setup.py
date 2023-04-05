@@ -46,7 +46,7 @@ setup(
                 'sphinx_rtd_theme'],
         'ci': ['coveralls', 'pycodestyle'],
     },
-    package_data={},
+    package_data={'':['navigationdrawer_gradient_ltor.png', 'navigationdrawer_gradient_rtol.png']},
     data_files=[],
     entry_points={},
     project_urls={
